@@ -1,6 +1,7 @@
 // src/services/cart.service.js
 const Cart = require("../models/cart.model");
 const Product = require("../models/product.model");
+const promotionService = require("./promotion.service"); // Import promotion service
 const { NotFoundError, BadRequestError } = require("../utils/errorTypes");
 const logger = require("../config/logger");
 
@@ -146,6 +147,29 @@ const addItemToCart = async (identifiers, itemData) => {
       cart.items.push(newItem);
     }
 
+    // Revalidate any applied coupon
+    if (cart.appliedCoupon && cart.appliedCoupon.code) {
+      try {
+        // Validate the promotion with the updated cart
+        const validationResult = await promotionService.validatePromotion(
+          cart.appliedCoupon.code,
+          cart._id,
+          identifiers.userId
+        );
+
+        // If the promotion is no longer valid, remove it
+        if (!validationResult.valid) {
+          cart.appliedCoupon = undefined;
+        }
+      } catch (error) {
+        // If there's any error validating the promotion, remove it to be safe
+        logger.warn(
+          `Error validating promotion after adding item: ${error.message}`
+        );
+        cart.appliedCoupon = undefined;
+      }
+    }
+
     await cart.save();
     return cart;
   } catch (error) {
@@ -207,6 +231,29 @@ const updateCartItemQuantity = async (identifiers, itemId, quantity) => {
       item.quantity = quantity;
     }
 
+    // Revalidate any applied coupon
+    if (cart.appliedCoupon && cart.appliedCoupon.code) {
+      try {
+        // Validate the promotion with the updated cart
+        const validationResult = await promotionService.validatePromotion(
+          cart.appliedCoupon.code,
+          cart._id,
+          identifiers.userId
+        );
+
+        // If the promotion is no longer valid, remove it
+        if (!validationResult.valid) {
+          cart.appliedCoupon = undefined;
+        }
+      } catch (error) {
+        // If there's any error validating the promotion, remove it to be safe
+        logger.warn(
+          `Error validating promotion after updating quantity: ${error.message}`
+        );
+        cart.appliedCoupon = undefined;
+      }
+    }
+
     await cart.save();
     return cart;
   } catch (error) {
@@ -234,6 +281,30 @@ const removeCartItem = async (identifiers, itemId) => {
 
     // Remove item
     item.remove();
+
+    // Revalidate any applied coupon
+    if (cart.appliedCoupon && cart.appliedCoupon.code) {
+      try {
+        // Validate the promotion with the updated cart
+        const validationResult = await promotionService.validatePromotion(
+          cart.appliedCoupon.code,
+          cart._id,
+          identifiers.userId
+        );
+
+        // If the promotion is no longer valid, remove it
+        if (!validationResult.valid) {
+          cart.appliedCoupon = undefined;
+        }
+      } catch (error) {
+        // If there's any error validating the promotion, remove it to be safe
+        logger.warn(
+          `Error validating promotion after removing item: ${error.message}`
+        );
+        cart.appliedCoupon = undefined;
+      }
+    }
+
     await cart.save();
 
     return cart;
@@ -275,17 +346,12 @@ const applyCoupon = async (identifiers, couponCode) => {
   try {
     const cart = await getOrCreateCart(identifiers);
 
-    // This is a placeholder - we'll implement coupon validation later
-    // when we build the promotion system
-    cart.appliedCoupon = {
-      code: couponCode,
-      discountType: "percentage",
-      discountValue: 10,
-      minimumOrderValue: 1000,
-    };
-
-    await cart.save();
-    return cart;
+    // Use the promotion service to apply the coupon
+    return await promotionService.applyPromotionToCart(
+      cart._id,
+      couponCode,
+      identifiers.userId
+    );
   } catch (error) {
     logger.error("Error applying coupon:", error);
     throw error;
@@ -327,6 +393,29 @@ const addShippingMethod = async (identifiers, shippingData) => {
       method: shippingData.method,
       cost: shippingData.cost || 0,
     };
+
+    // Revalidate any applied coupon (especially for shipping discounts)
+    if (cart.appliedCoupon && cart.appliedCoupon.code) {
+      try {
+        // Validate the promotion with the updated cart
+        const validationResult = await promotionService.validatePromotion(
+          cart.appliedCoupon.code,
+          cart._id,
+          identifiers.userId
+        );
+
+        // If the promotion is no longer valid, remove it
+        if (!validationResult.valid) {
+          cart.appliedCoupon = undefined;
+        }
+      } catch (error) {
+        // If there's any error validating the promotion, remove it to be safe
+        logger.warn(
+          `Error validating promotion after adding shipping: ${error.message}`
+        );
+        cart.appliedCoupon = undefined;
+      }
+    }
 
     await cart.save();
     return cart;

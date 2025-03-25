@@ -50,7 +50,43 @@ const createOrderFromCart = async (cart, orderData) => {
     const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
     const tax = orderItems.reduce((sum, item) => sum + item.gstAmount, 0);
     const shippingCost = orderData.shipping.cost || cart.shipping?.cost || 0;
-    const discount = cart.appliedCoupon ? cart.discountAmount : 0;
+
+    // Handle applied coupon/promotion if present
+    let discount = 0;
+    let appliedCoupon = null;
+
+    if (cart.appliedCoupon && cart.appliedCoupon.code) {
+      // Get the exact discount amount - this could be custom calculated based on the cart
+      // For simplicity, we're using the cart's calculated discountAmount virtual
+      discount = cart.discountAmount || 0;
+
+      // Store coupon information
+      appliedCoupon = {
+        code: cart.appliedCoupon.code,
+        discount,
+      };
+
+      // Record the usage of the promotion
+      try {
+        // Import the promotion service at the top of the file
+        const promotionService = require("./promotion.service");
+
+        // Get the promotion by code
+        const promotion = await promotionService.getPromotionByCode(
+          cart.appliedCoupon.code
+        );
+
+        // Record usage
+        await promotionService.recordPromotionUsage(
+          promotion._id,
+          cart.user // Will be undefined for guest carts
+        );
+      } catch (error) {
+        // Log but don't fail the order if we can't record promotion usage
+        logger.error(`Failed to record promotion usage: ${error.message}`);
+      }
+    }
+
     const total = subtotal + tax + shippingCost - discount;
 
     // Generate unique order number
@@ -80,6 +116,7 @@ const createOrderFromCart = async (cart, orderData) => {
       },
       status: ORDER_STATUS.PENDING,
       notes: orderData.notes,
+      couponApplied: appliedCoupon,
       statusHistory: [
         {
           status: ORDER_STATUS.PENDING,
