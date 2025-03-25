@@ -5,12 +5,14 @@ const Product = require("../models/product.model");
 const inventoryService = require("./inventory.service");
 const emailService = require("./email.service");
 const paymentService = require("./payment.service");
+const pdfService = require("./pdf.service");
 const logger = require("../config/logger");
 const {
   NotFoundError,
   BadRequestError,
   ConflictError,
-} = require("../utils/errorTypes");
+  ForbiddenError,
+} = require("../utils/errors");
 const { ORDER_STATUS, PAYMENT_STATUS } = require("../utils/constants");
 const eventService = require('./event.service');
 
@@ -949,41 +951,71 @@ const processRefund = async (orderId, amount, reason) => {
 };
 
 /**
- * Generate invoice for order
+ * Generate PDF invoice for an order
  * @param {String} orderId - Order ID
- * @param {String} userId - User ID (for authorization)
- * @returns {Promise<String>} Invoice URL
+ * @param {String} userId - User ID (for access control)
+ * @returns {Promise<String>} URL to the generated invoice
  */
 const generateInvoice = async (orderId, userId) => {
   try {
-    // Find order
-    const order = await Order.findById(orderId);
+    // Get the order with populated data
+    const order = await Order.findById(orderId)
+      .populate({
+        path: "user",
+        select: "email profile.firstName profile.lastName profile.phone",
+      })
+      .populate({
+        path: "items.product",
+        select: "name sku images",
+      });
 
     if (!order) {
       throw new NotFoundError("Order not found");
     }
 
-    // Check if the order belongs to the user (unless admin check is implemented elsewhere)
-    if (userId && order.user && order.user.toString() !== userId.toString()) {
-      throw new NotFoundError("Order not found");
+    // Check if user is authorized to view this order
+    if (userId && order.user && order.user._id.toString() !== userId.toString()) {
+      // Check if user is admin/manager (this check should be done in the controller as well)
+      const User = require("../models/user.model");
+      const user = await User.findById(userId).select("role");
+      
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        throw new ForbiddenError("You are not authorized to access this order's invoice");
+      }
     }
 
-    // Check if invoice already exists
-    if (order.invoiceUrl) {
-      return order.invoiceUrl;
+    // Generate PDF invoice
+    const invoiceUrl = await pdfService.generateInvoice(order);
+
+    // Update order with invoice URL if not already set
+    if (!order.invoiceUrl) {
+      order.invoiceUrl = invoiceUrl;
+      await order.save();
     }
 
-    // In a real implementation, we would generate a PDF invoice here
-    // For now, we'll just simulate it with a placeholder URL
-    const invoiceUrl = `/invoices/${order.orderNumber}.pdf`;
-
-    // Update order with invoice URL
-    order.invoiceUrl = invoiceUrl;
-    await order.save();
+    // Create event for invoice generation
+    try {
+      await eventService.createEvent({
+        type: 'order.invoice_generated',
+        target: order._id,
+        targetModel: 'Order',
+        data: {
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          invoiceUrl: invoiceUrl,
+          generatedAt: new Date()
+        },
+        recipients: order.user ? [order.user._id] : [],
+        roles: []
+      });
+    } catch (eventError) {
+      // Log error but don't fail the invoice generation
+      logger.error(`Error sending event for invoice generation ${order._id}:`, eventError);
+    }
 
     return invoiceUrl;
   } catch (error) {
-    logger.error(`Error generating invoice for order ${orderId}:`, error);
+    logger.error(`Error generating invoice: ${error.message}`);
     throw error;
   }
 };

@@ -8,6 +8,7 @@ const {
   upload,
   multerErrorHandler,
 } = require("../../middleware/upload.middleware");
+const { processImages } = require("../../middleware/image.middleware");
 
 const router = express.Router();
 
@@ -41,13 +42,8 @@ router.post(
   "/profile/avatar",
   upload.single("user-avatar"),
   multerErrorHandler,
-  (req, res) => {
-    // This endpoint will be implemented later
-    res.status(501).json({
-      success: false,
-      message: "Avatar upload not implemented yet",
-    });
-  }
+  processImages,
+  userController.uploadAvatar
 );
 
 /**

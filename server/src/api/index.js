@@ -15,6 +15,8 @@ const promotionRoutes = require("./promotions/promotion.routes"); // New promoti
 const shippingRoutes = require("./shipping/shipping.routes"); // Shipping routes
 const analyticsRoutes = require("./analytics/analytics.routes"); // Analytics routes
 const eventRoutes = require("./events/event.routes"); // New event routes
+const reviewRoutes = require("./reviews/review.routes"); // Review routes
+const searchRoutes = require("./search/search.routes"); // Search routes
 
 // Register routes
 router.use("/auth", authRoutes);
@@ -29,6 +31,8 @@ router.use("/promotions", promotionRoutes); // Register promotion routes
 router.use("/shipping", shippingRoutes); // Register shipping routes
 router.use("/analytics", analyticsRoutes); // Register analytics routes
 router.use("/events", eventRoutes); // Register event routes
+router.use("/reviews", reviewRoutes); // Register review routes
+router.use("/search", searchRoutes); // Register search routes
 
 // Health check endpoint
 router.get("/health", (req, res) => {

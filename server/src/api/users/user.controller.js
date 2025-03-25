@@ -1,6 +1,8 @@
 // src/api/users/user.controller.js
 const userService = require("../../services/user.service");
+const mediaService = require("../../services/media.service");
 const { responseFormatter } = require("../../utils/responseFormatter");
+const logger = require("../../config/logger");
 
 /**
  * Get user profile
@@ -37,6 +39,55 @@ const updateProfile = async (req, res, next) => {
       .status(200)
       .json(responseFormatter(true, "Profile updated successfully", { user }));
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Upload profile avatar
+ * @route POST /api/v1/users/profile/avatar
+ * @access Private
+ */
+const uploadAvatar = async (req, res, next) => {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json(responseFormatter(false, "No avatar image uploaded"));
+    }
+    
+    logger.info(`Processing avatar upload for user ${req.user._id}: ${req.file.path}`);
+    
+    // Create media record for the avatar
+    const metadata = {
+      alt: `${req.user.profile?.firstName || 'User'}'s Avatar`,
+      title: `User Avatar - ${req.user._id}`,
+      folder: `users/avatars`,
+      isPublic: true,
+      relatedUser: req.user._id
+    };
+    
+    // Create media record
+    const media = await mediaService.createMedia(req.file, metadata, req.user._id);
+    
+    // Get file path (use optimized path if available from the image processor middleware)
+    const avatarUrl = req.file.optimizedPath || `/${req.file.path.replace(/\\/g, '/')}`;
+    
+    // Update user profile with the new avatar URL
+    const user = await userService.updateProfile(req.user._id, {
+      avatar: avatarUrl
+    });
+    
+    return res.status(200).json(
+      responseFormatter(true, "Avatar uploaded successfully", {
+        user: {
+          _id: user._id,
+          profile: user.profile
+        },
+        avatarUrl
+      })
+    );
+  } catch (error) {
+    logger.error(`Error uploading avatar: ${error.message}`);
     next(error);
   }
 };
@@ -228,6 +279,7 @@ const getRecentlyViewed = async (req, res, next) => {
 module.exports = {
   getProfile,
   updateProfile,
+  uploadAvatar,
   getAddresses,
   addAddress,
   updateAddress,
