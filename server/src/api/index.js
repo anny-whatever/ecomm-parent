@@ -12,6 +12,8 @@ const cartRoutes = require("./cart/cart.routes");
 const inventoryRoutes = require("./inventory/inventory.routes");
 const paymentRoutes = require("./payments/payment.routes");
 const promotionRoutes = require("./promotions/promotion.routes"); // New promotion routes
+const shippingRoutes = require("./shipping/shipping.routes"); // Shipping routes
+const analyticsRoutes = require("./analytics/analytics.routes"); // Analytics routes
 
 // Register routes
 router.use("/auth", authRoutes);
@@ -23,6 +25,8 @@ router.use("/cart", cartRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/promotions", promotionRoutes); // Register promotion routes
+router.use("/shipping", shippingRoutes); // Register shipping routes
+router.use("/analytics", analyticsRoutes); // Register analytics routes
 
 // Health check endpoint
 router.get("/health", (req, res) => {
