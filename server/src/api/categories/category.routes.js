@@ -1,7 +1,7 @@
 // src/api/categories/category.routes.js
 const express = require("express");
 const categoryController = require("./category.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const {

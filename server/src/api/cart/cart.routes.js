@@ -1,7 +1,7 @@
 // src/api/cart/cart.routes.js
 const express = require("express");
 const cartController = require("./cart.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const cartValidator = require("../../utils/validators/cart.validator");
 

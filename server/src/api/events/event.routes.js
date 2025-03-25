@@ -1,6 +1,6 @@
 const express = require('express');
 const eventController = require('./event.controller');
-const authMiddleware = require('../../middleware/auth.middleware');
+const { authMiddleware } = require('../../middleware/auth.middleware');
 const rbacMiddleware = require('../../middleware/rbac.middleware');
 const validationMiddleware = require('../../middleware/validation.middleware');
 const eventValidator = require('../../utils/validators/event.validator');
@@ -114,29 +114,29 @@ router.post(
   eventController.cleanupConnections
 );
 
-// Get scheduled tasks information (admin only)
+/**
+ * @route   GET /api/v1/events/tasks
+ * @desc    Get scheduled tasks information
+ * @access  Private (Admin)
+ */
 router.get(
   '/tasks',
-  validateRequest(eventValidator.getTasksInfo),
-  authenticateToken,
-  checkRole(['admin']),
+  validationMiddleware(eventValidator.getTasksInfo),
+  authMiddleware,
+  rbacMiddleware(['admin']),
   eventController.getScheduledTasks
 );
 
-// Manual cleanup route (admin only)
+/**
+ * @route   POST /api/v1/events/cleanup/manual
+ * @desc    Manually cleanup old connections
+ * @access  Private (Admin)
+ */
 router.post(
   '/cleanup/manual',
-  authenticateToken,
-  checkRole(['admin']),
+  authMiddleware,
+  rbacMiddleware(['admin']),
   eventController.manualCleanup
-);
-
-// Automatic cleanup route (admin only)
-router.post(
-  '/cleanup',
-  authenticateToken,
-  checkRole(['admin']),
-  eventController.cleanupConnections
 );
 
 module.exports = router; 

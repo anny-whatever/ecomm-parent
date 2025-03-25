@@ -1,7 +1,7 @@
 // src/api/auth/auth.routes.js
 const express = require("express");
 const authController = require("./auth.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const authValidator = require("../../utils/validators/auth.validator");
 

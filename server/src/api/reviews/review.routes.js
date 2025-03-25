@@ -1,7 +1,6 @@
 const express = require("express");
 const reviewController = require("./review.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
-const { optionalAuth } = require("../../middleware/auth.middleware");
+const { authMiddleware, optionalAuth } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const reviewValidator = require("../../utils/validators/review.validator");

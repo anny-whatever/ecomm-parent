@@ -1,7 +1,7 @@
 // src/api/analytics/analytics.routes.js
 const express = require("express");
 const analyticsController = require("./analytics.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const analyticsValidator = require("../../utils/validators/analytics.validator");

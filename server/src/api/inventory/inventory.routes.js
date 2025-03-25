@@ -1,7 +1,7 @@
 // src/api/inventory/inventory.routes.js
 const express = require("express");
 const inventoryController = require("./inventory.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const inventoryValidator = require("../../utils/validators/inventory.validator");

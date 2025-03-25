@@ -1,7 +1,7 @@
 // src/api/products/product.routes.js
 const express = require("express");
 const productController = require("./product.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const {

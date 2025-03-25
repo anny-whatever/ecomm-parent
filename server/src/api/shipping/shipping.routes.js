@@ -1,7 +1,7 @@
 // src/api/shipping/shipping.routes.js
 const express = require("express");
 const shippingController = require("./shipping.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const shippingValidator = require("../../utils/validators/shipping.validator");

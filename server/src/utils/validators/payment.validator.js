@@ -29,21 +29,13 @@ const verifyPayment = Joi.object({
 // Generic ID param validator (used for various routes)
 const getById = Joi.object({
   params: Joi.object({
-    paymentId: Joi.string().when('orderId', {
-      is: Joi.exist(),
-      then: Joi.optional(),
-      otherwise: Joi.required()
-    }).messages({
+    paymentId: Joi.string().optional().messages({
       "any.required": "Payment ID is required",
     }),
-    orderId: Joi.string().when('paymentId', {
-      is: Joi.exist(),
-      then: Joi.optional(),
-      otherwise: Joi.required()
-    }).messages({
+    orderId: Joi.string().optional().messages({
       "any.required": "Order ID is required",
     }),
-  }),
+  }).or('paymentId', 'orderId'),
 });
 
 // Get all payments validation schema

@@ -1,7 +1,7 @@
 // src/api/promotions/promotion.routes.js
 const express = require("express");
 const promotionController = require("./promotion.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const promotionValidator = require("../../utils/validators/promotion.validator");

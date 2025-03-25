@@ -1,7 +1,7 @@
 // src/api/payments/payment.routes.js
 const express = require("express");
 const paymentController = require("./payment.controller");
-const authMiddleware = require("../../middleware/auth.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
 const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const paymentValidator = require("../../utils/validators/payment.validator");
