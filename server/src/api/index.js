@@ -9,6 +9,8 @@ const productRoutes = require("./products/product.routes");
 const categoryRoutes = require("./categories/category.routes");
 const orderRoutes = require("./orders/order.routes");
 const cartRoutes = require("./cart/cart.routes");
+const inventoryRoutes = require("./inventory/inventory.routes");
+const paymentRoutes = require("./payments/payment.routes");
 
 // Register routes
 router.use("/auth", authRoutes);
@@ -17,6 +19,8 @@ router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/orders", orderRoutes);
 router.use("/cart", cartRoutes);
+router.use("/inventory", inventoryRoutes);
+router.use("/payments", paymentRoutes);
 
 // Health check endpoint
 router.get("/health", (req, res) => {
