@@ -12,6 +12,7 @@ const {
   ConflictError,
 } = require("../utils/errorTypes");
 const { ORDER_STATUS, PAYMENT_STATUS } = require("../utils/constants");
+const eventService = require('./event.service');
 
 /**
  * Create a new order from cart
@@ -137,6 +138,27 @@ const createOrderFromCart = async (cart, orderData) => {
     // Send order confirmation email if user has an email
     if (order.billing.email) {
       await sendOrderConfirmationEmail(order);
+    }
+
+    // Send real-time update via event system
+    try {
+      await eventService.createEvent({
+        type: 'order.created',
+        target: order._id,
+        targetModel: 'Order',
+        data: {
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          total: order.pricing.total,
+          items: order.items.length,
+          createdAt: new Date()
+        },
+        recipients: order.user ? [order.user] : [],
+        roles: ['admin', 'manager']
+      });
+    } catch (eventError) {
+      // Log error but don't fail the order creation
+      logger.error(`Error sending real-time update for new order ${order._id}:`, eventError);
     }
 
     return order;
@@ -499,6 +521,25 @@ const cancelOrder = async (orderId, userId, reason) => {
       );
     }
 
+    // Send real-time update via event system
+    try {
+      await eventService.createOrderStatusEvent(
+        orderId, 
+        ORDER_STATUS.CANCELLED,
+        {
+          userId: order.user,
+          orderNumber: order.orderNumber, 
+          total: order.pricing.total,
+          items: order.items.length,
+          reason: reason,
+          cancelledAt: new Date()
+        }
+      );
+    } catch (eventError) {
+      // Log error but don't fail the cancellation
+      logger.error(`Error sending real-time update for order cancellation ${orderId}:`, eventError);
+    }
+
     return order;
   } catch (error) {
     logger.error(`Error cancelling order ${orderId}:`, error);
@@ -618,6 +659,35 @@ const updateOrderStatus = async (orderId, newStatus, note, userId) => {
 
     // Save updated order
     await order.save();
+
+    // Send real-time update via event system
+    try {
+      // Determine the event type based on the new status
+      let eventType = 'order.updated';
+      if (newStatus === ORDER_STATUS.SHIPPED) {
+        eventType = 'order.shipped';
+      } else if (newStatus === ORDER_STATUS.DELIVERED) {
+        eventType = 'order.delivered';
+      } else if (newStatus === ORDER_STATUS.CANCELLED) {
+        eventType = 'order.cancelled';
+      }
+
+      await eventService.createOrderStatusEvent(
+        orderId, 
+        newStatus,
+        {
+          userId: order.user,
+          orderNumber: order.orderNumber, 
+          total: order.pricing.total,
+          items: order.items.length,
+          note: note,
+          updatedAt: new Date()
+        }
+      );
+    } catch (eventError) {
+      // Log error but don't fail the status update
+      logger.error(`Error sending real-time update for order ${orderId}:`, eventError);
+    }
 
     return order;
   } catch (error) {

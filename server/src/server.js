@@ -3,6 +3,7 @@ require("dotenv").config();
 const app = require("./app");
 const logger = require("./config/logger");
 const connectDB = require("./config/database");
+const schedulerService = require("./services/scheduler.service");
 
 // Environment variables
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,9 @@ const server = app.listen(PORT, () => {
   logger.info(
     `API available at http://localhost:${PORT}/api/${process.env.API_VERSION}`
   );
+  
+  // Initialize scheduled tasks
+  schedulerService.initScheduledTasks();
 });
 
 // Handle unhandled promise rejections
