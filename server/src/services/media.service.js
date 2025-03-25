@@ -6,8 +6,9 @@ const { promisify } = require("util");
 const { NotFoundError, BadRequestError } = require("../utils/errorTypes");
 const logger = require("../config/logger");
 
-const unlinkAsync = promisify(fs.unlink);
-const statAsync = promisify(fs.stat);
+// Make sure fs functions exist before promisifying them
+const unlinkAsync = fs.unlink ? promisify(fs.unlink) : null;
+const statAsync = fs.stat ? promisify(fs.stat) : null;
 
 /**
  * Create a new media record

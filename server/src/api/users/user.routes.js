@@ -40,7 +40,7 @@ router.put(
  */
 router.post(
   "/profile/avatar",
-  upload.single("user-avatar"),
+  upload.single("avatar"),
   multerErrorHandler,
   processImages,
   userController.uploadAvatar
