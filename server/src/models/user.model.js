@@ -63,9 +63,42 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function() {
+        // Password is required only if not using a social login method
+        return !this.socialAuth || Object.keys(this.socialAuth).length === 0;
+      },
       minlength: 8,
       select: false, // Don't include password in queries by default
+    },
+    socialAuth: {
+      google: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        photo: String,
+      },
+      facebook: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        photo: String,
+      },
+      twitter: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        photo: String,
+      },
+      apple: {
+        id: String,
+        token: String,
+        email: String,
+        name: String,
+        photo: String,
+      },
     },
     role: {
       type: String,

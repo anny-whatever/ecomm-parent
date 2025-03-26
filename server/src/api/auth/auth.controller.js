@@ -2,6 +2,8 @@
 const authService = require("../../services/auth.service");
 const logger = require("../../config/logger");
 const { responseFormatter } = require("../../utils/responseFormatter");
+const { SOCIAL_AUTH_PROVIDERS } = require("../../utils/constants");
+const passport = require("../../config/passport");
 
 /**
  * Register a new user
@@ -186,6 +188,149 @@ const getCurrentUser = async (req, res) => {
   );
 };
 
+/**
+ * Initiate Google OAuth login
+ * @route GET /api/v1/auth/google
+ */
+const googleLogin = (req, res, next) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })(req, res, next);
+};
+
+/**
+ * Handle Google OAuth callback
+ * @route GET /api/v1/auth/google/callback
+ */
+const googleCallback = (req, res, next) => {
+  passport.authenticate("google", { session: false }, (err, user, info) => {
+    if (err) {
+      logger.error("Google authentication error:", err);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(
+          err.message || "Authentication failed"
+        )}`
+      );
+    }
+
+    // Generate JWT token
+    const token = authService.generateToken(user);
+
+    // Redirect to frontend with token
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/social-auth-success?token=${token}`
+    );
+  })(req, res, next);
+};
+
+/**
+ * Initiate Facebook OAuth login
+ * @route GET /api/v1/auth/facebook
+ */
+const facebookLogin = (req, res, next) => {
+  passport.authenticate("facebook", {
+    scope: ["email", "public_profile"],
+    session: false,
+  })(req, res, next);
+};
+
+/**
+ * Handle Facebook OAuth callback
+ * @route GET /api/v1/auth/facebook/callback
+ */
+const facebookCallback = (req, res, next) => {
+  passport.authenticate("facebook", { session: false }, (err, user, info) => {
+    if (err) {
+      logger.error("Facebook authentication error:", err);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(
+          err.message || "Authentication failed"
+        )}`
+      );
+    }
+
+    // Generate JWT token
+    const token = authService.generateToken(user);
+
+    // Redirect to frontend with token
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/social-auth-success?token=${token}`
+    );
+  })(req, res, next);
+};
+
+/**
+ * Link social account to existing user
+ * @route POST /api/v1/auth/link/:provider
+ */
+const linkSocialAccount = async (req, res, next) => {
+  try {
+    const { provider } = req.params;
+    const { profile, token } = req.body;
+
+    // Validate provider
+    if (!Object.values(SOCIAL_AUTH_PROVIDERS).includes(provider)) {
+      return res
+        .status(400)
+        .json(responseFormatter(false, `Invalid provider: ${provider}`));
+    }
+
+    const updatedUser = await authService.linkSocialAccount(
+      req.user.id,
+      provider,
+      profile,
+      token
+    );
+
+    return res
+      .status(200)
+      .json(
+        responseFormatter(
+          true,
+          `Successfully linked ${provider} account`,
+          updatedUser
+        )
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Unlink social account from user
+ * @route DELETE /api/v1/auth/unlink/:provider
+ */
+const unlinkSocialAccount = async (req, res, next) => {
+  try {
+    const { provider } = req.params;
+
+    // Validate provider
+    if (!Object.values(SOCIAL_AUTH_PROVIDERS).includes(provider)) {
+      return res
+        .status(400)
+        .json(responseFormatter(false, `Invalid provider: ${provider}`));
+    }
+
+    const updatedUser = await authService.unlinkSocialAccount(
+      req.user.id,
+      provider
+    );
+
+    return res
+      .status(200)
+      .json(
+        responseFormatter(
+          true,
+          `Successfully unlinked ${provider} account`,
+          updatedUser
+        )
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -195,4 +340,10 @@ module.exports = {
   changePassword,
   logout,
   getCurrentUser,
+  googleLogin,
+  googleCallback,
+  facebookLogin,
+  facebookCallback,
+  linkSocialAccount,
+  unlinkSocialAccount,
 };

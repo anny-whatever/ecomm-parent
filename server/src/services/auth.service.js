@@ -389,6 +389,202 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   }
 };
 
+/**
+ * Process user authentication through a social provider
+ * @param {String} provider - The social provider (google, facebook, etc.)
+ * @param {Object} profile - User profile data from the provider
+ * @param {String} token - Access token from the provider
+ * @returns {Object} User data and JWT token
+ */
+const socialAuth = async (provider, profile, token) => {
+  try {
+    // Extract email and profile info
+    const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+    
+    if (!email) {
+      throw new BadRequestError(`No email provided by ${provider}`);
+    }
+    
+    // Look for existing user by provider ID or email
+    let user = await User.findOne({
+      $or: [
+        { [`socialAuth.${provider}.id`]: profile.id },
+        { email }
+      ]
+    });
+    
+    // If user exists, update social auth info
+    if (user) {
+      // Initialize socialAuth if not exists
+      user.socialAuth = user.socialAuth || {};
+      
+      // Update provider info
+      user.socialAuth[provider] = {
+        id: profile.id,
+        token,
+        email,
+        name: profile.displayName,
+        photo: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
+      };
+      
+      // Ensure email is verified for social logins
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+      }
+      
+      // Ensure user is active
+      if (user.status !== 'active') {
+        user.status = 'active';
+      }
+      
+      // Update last login time
+      user.lastLogin = new Date();
+      
+      await user.save();
+    } else {
+      // Create new user
+      user = new User({
+        email,
+        emailVerified: true,
+        status: 'active',
+        profile: {
+          firstName: profile.name ? profile.name.givenName : profile.displayName.split(' ')[0],
+          lastName: profile.name ? profile.name.familyName : profile.displayName.split(' ').slice(1).join(' '),
+          avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
+        },
+        socialAuth: {
+          [provider]: {
+            id: profile.id,
+            token,
+            email,
+            name: profile.displayName,
+            photo: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
+          }
+        },
+        lastLogin: new Date()
+      });
+      
+      await user.save();
+    }
+    
+    // Generate JWT token
+    const jwtToken = generateToken(user);
+    
+    // Clean user data for response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.emailVerificationToken;
+    delete userResponse.emailVerificationExpires;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpires;
+    
+    return { user: userResponse, token: jwtToken };
+  } catch (error) {
+    logger.error(`${provider} authentication error:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Link social account to existing user
+ * @param {String} userId - User ID
+ * @param {String} provider - Social provider
+ * @param {Object} profile - Provider profile data
+ * @param {String} token - Provider access token
+ * @returns {Object} Updated user data
+ */
+const linkSocialAccount = async (userId, provider, profile, token) => {
+  try {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+    
+    // Initialize socialAuth if not exists
+    user.socialAuth = user.socialAuth || {};
+    
+    // Check if this social account is already linked to another user
+    const existingUser = await User.findOne({
+      [`socialAuth.${provider}.id`]: profile.id,
+      _id: { $ne: userId }
+    });
+    
+    if (existingUser) {
+      throw new BadRequestError(`This ${provider} account is already linked to another user`);
+    }
+    
+    // Update provider info
+    user.socialAuth[provider] = {
+      id: profile.id,
+      token,
+      email: profile.emails && profile.emails[0] ? profile.emails[0].value : null,
+      name: profile.displayName,
+      photo: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
+    };
+    
+    await user.save();
+    
+    // Clean user data for response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.emailVerificationToken;
+    delete userResponse.emailVerificationExpires;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpires;
+    
+    return userResponse;
+  } catch (error) {
+    logger.error(`Link ${provider} account error:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Unlink social account from user
+ * @param {String} userId - User ID
+ * @param {String} provider - Social provider to unlink
+ * @returns {Object} Updated user data
+ */
+const unlinkSocialAccount = async (userId, provider) => {
+  try {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+    
+    // Check if user has this social provider
+    if (!user.socialAuth || !user.socialAuth[provider]) {
+      throw new BadRequestError(`No ${provider} account linked to this user`);
+    }
+    
+    // Check if user has a password set, cannot unlink if no other auth method
+    if (!user.password && Object.keys(user.socialAuth).length === 1) {
+      throw new BadRequestError(
+        'Cannot unlink your only authentication method. Please set a password first'
+      );
+    }
+    
+    // Remove the provider
+    user.socialAuth[provider] = undefined;
+    await user.save();
+    
+    // Clean user data for response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.emailVerificationToken;
+    delete userResponse.emailVerificationExpires;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpires;
+    
+    return userResponse;
+  } catch (error) {
+    logger.error(`Unlink ${provider} account error:`, error);
+    throw error;
+  }
+};
+
 module.exports = {
   generateToken,
   verifyToken,
@@ -400,4 +596,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
+  socialAuth,
+  linkSocialAccount,
+  unlinkSocialAccount,
 };

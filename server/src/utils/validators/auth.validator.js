@@ -1,5 +1,6 @@
 // src/utils/validators/auth.validator.js
 const Joi = require("joi");
+const { SOCIAL_AUTH_PROVIDERS } = require("../constants");
 
 // Register validation schema
 const register = Joi.object({
@@ -110,10 +111,59 @@ const changePassword = Joi.object({
   }),
 });
 
+// Link social account validation schema
+const linkSocialAccount = Joi.object({
+  params: Joi.object({
+    provider: Joi.string()
+      .valid(...Object.values(SOCIAL_AUTH_PROVIDERS))
+      .required()
+      .messages({
+        "any.only": "Invalid social provider",
+        "any.required": "Provider is required",
+      }),
+  }),
+  body: Joi.object({
+    profile: Joi.object({
+      id: Joi.string().required(),
+      displayName: Joi.string().required(),
+      emails: Joi.array().items(
+        Joi.object({
+          value: Joi.string().email().required(),
+        })
+      ),
+      photos: Joi.array().items(
+        Joi.object({
+          value: Joi.string().uri(),
+        })
+      ),
+      name: Joi.object({
+        givenName: Joi.string(),
+        familyName: Joi.string(),
+      }),
+    }).required(),
+    token: Joi.string().required(),
+  }),
+});
+
+// Unlink social account validation schema
+const unlinkSocialAccount = Joi.object({
+  params: Joi.object({
+    provider: Joi.string()
+      .valid(...Object.values(SOCIAL_AUTH_PROVIDERS))
+      .required()
+      .messages({
+        "any.only": "Invalid social provider",
+        "any.required": "Provider is required",
+      }),
+  }),
+});
+
 module.exports = {
   register,
   login,
   forgotPassword,
   resetPassword,
   changePassword,
+  linkSocialAccount,
+  unlinkSocialAccount,
 };

@@ -86,6 +86,14 @@ const FILE_LIMITS = {
   CATEGORY_IMAGES: 1,
 };
 
+// Social authentication providers
+const SOCIAL_AUTH_PROVIDERS = {
+  GOOGLE: "google",
+  FACEBOOK: "facebook",
+  TWITTER: "twitter",
+  APPLE: "apple",
+};
+
 module.exports = {
   USER_ROLES,
   USER_STATUS,
@@ -98,4 +106,5 @@ module.exports = {
   DATE_FORMATS,
   GST_RATES,
   FILE_LIMITS,
+  SOCIAL_AUTH_PROVIDERS,
 };

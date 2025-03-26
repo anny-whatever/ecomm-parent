@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const passport = require("./config/passport");
 
 // Import middleware
 const errorMiddleware = require("./middleware/error.middleware");
@@ -40,6 +41,9 @@ app.use("/api", limiter);
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Request logger
 app.use(loggerMiddleware);
