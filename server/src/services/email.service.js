@@ -1,6 +1,10 @@
 // src/services/email.service.js
 const nodemailer = require("nodemailer");
 const logger = require("../config/logger");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
+const emailHelpers = require("../utils/emailHelpers");
 
 /**
  * Email service for sending emails
@@ -9,6 +13,9 @@ class EmailService {
   constructor() {
     this.transporter = null;
     this.initializeTransporter();
+    this.registerHandlebarsHelpers();
+    this.templates = {};
+    this.loadTemplates();
   }
 
   /**
@@ -42,6 +49,63 @@ class EmailService {
   }
 
   /**
+   * Register handlebars helpers
+   */
+  registerHandlebarsHelpers() {
+    handlebars.registerHelper(
+      "calculateDiscountedTotal",
+      emailHelpers.calculateDiscountedTotal
+    );
+    handlebars.registerHelper(
+      "calculateSavings",
+      emailHelpers.calculateSavings
+    );
+    handlebars.registerHelper("formatDate", emailHelpers.formatDate);
+    handlebars.registerHelper("formatCurrency", emailHelpers.formatCurrency);
+    handlebars.registerHelper("truncateText", emailHelpers.truncateText);
+  }
+
+  /**
+   * Load email templates
+   */
+  loadTemplates() {
+    try {
+      const templatesDir = path.join(__dirname, "../templates/emails");
+
+      // Check if directory exists
+      if (fs.existsSync(templatesDir)) {
+        const files = fs.readdirSync(templatesDir);
+
+        files.forEach((file) => {
+          if (file.endsWith(".html")) {
+            const templateName = file.replace(".html", "");
+            const templatePath = path.join(templatesDir, file);
+            try {
+              const templateSource = fs.readFileSync(templatePath, "utf8");
+              this.templates[templateName] = handlebars.compile(templateSource);
+              logger.info(`Loaded email template: ${templateName}`);
+            } catch (templateError) {
+              logger.error(
+                `Failed to load template ${templateName}: ${templateError.message}`
+              );
+            }
+          }
+        });
+
+        logger.info(
+          `Successfully loaded ${
+            Object.keys(this.templates).length
+          } email templates`
+        );
+      } else {
+        logger.warn(`Email templates directory not found: ${templatesDir}`);
+      }
+    } catch (error) {
+      logger.error("Error loading email templates:", error);
+    }
+  }
+
+  /**
    * Send email
    * @param {Object} options - Email options
    * @param {String} options.to - Recipient email
@@ -56,6 +120,11 @@ class EmailService {
     try {
       if (!this.transporter) {
         this.initializeTransporter();
+      }
+
+      // If template is provided, use it to generate HTML
+      if (options.template && options.data) {
+        options.html = this.renderTemplate(options.template, options.data);
       }
 
       const mailOptions = {
@@ -88,44 +157,151 @@ class EmailService {
   }
 
   /**
-   * Send template email
-   * @param {String} template - Template name
-   * @param {Object} data - Template data
-   * @param {Object} options - Email options
-   * @returns {Promise} Email sending result
+   * Render email template
+   * @param {String} templateName - Name of the template to render
+   * @param {Object} data - Data to populate the template with
+   * @returns {String} Rendered HTML content
    */
-  async sendTemplateEmail(template, data, options) {
+  renderTemplate(templateName, data) {
     try {
-      // Here you would use a template engine like handlebars
-      // For now, we'll just use a basic implementation
-
-      let htmlContent = "";
-
-      switch (template) {
-        case "welcome":
-          htmlContent = this.getWelcomeTemplate(data);
-          break;
-        case "order-confirmation":
-          htmlContent = this.getOrderConfirmationTemplate(data);
-          break;
-        case "reset-password":
-          htmlContent = this.getResetPasswordTemplate(data);
-          break;
-        default:
-          throw new Error(`Template "${template}" not found`);
+      // First, check if we have a precompiled template
+      if (this.templates[templateName]) {
+        logger.debug(`Using precompiled template: ${templateName}`);
+        return this.templates[templateName](data);
       }
 
-      return await this.sendEmail({
-        ...options,
-        html: htmlContent,
-      });
+      // If not, try to load it from file
+      const templatePath = path.join(
+        __dirname,
+        `../templates/emails/${templateName}.html`
+      );
+
+      if (fs.existsSync(templatePath)) {
+        logger.debug(`Loading template from file: ${templateName}`);
+        const templateSource = fs.readFileSync(templatePath, "utf8");
+        const template = handlebars.compile(templateSource);
+        // Cache it for future use
+        this.templates[templateName] = template;
+        return template(data);
+      }
+
+      // If we still don't have a template, fall back to legacy templates
+      logger.debug(`Using legacy template fallback for: ${templateName}`);
+      return this.getLegacyTemplate(templateName, data);
     } catch (error) {
-      logger.error("Template email sending failed:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      logger.error(`Error rendering template ${templateName}:`, error);
+
+      // Provide a basic fallback template in case of failure
+      const fallbackTemplate = handlebars.compile(`
+        <html>
+          <body>
+            <h1>{{subject}}</h1>
+            <p>Hello {{firstName}},</p>
+            <p>You have items in your cart.</p>
+            {{#if recoveryUrl}}
+            <p><a href="{{recoveryUrl}}">Click here to recover your cart</a></p>
+            {{/if}}
+            <p>Thank you for shopping with us.</p>
+          </body>
+        </html>
+      `);
+
+      // Try to use the fallback template with a safe subset of the data
+      try {
+        const safeData = {
+          subject: data.subject || "Your Cart",
+          firstName: data.firstName || "Valued Customer",
+          recoveryUrl: data.recoveryUrl,
+        };
+        return fallbackTemplate(safeData);
+      } catch (fallbackError) {
+        logger.error("Fallback template rendering failed:", fallbackError);
+        // Return a basic string as absolute last resort
+        return `<html><body><p>Please check your cart.</p></body></html>`;
+      }
     }
+  }
+
+  /**
+   * Get legacy template (backward compatibility)
+   * @param {String} template - Template name
+   * @param {Object} data - Template data
+   * @returns {String} HTML content
+   */
+  getLegacyTemplate(template, data) {
+    switch (template) {
+      case "welcome":
+        return this.getWelcomeTemplate(data);
+      case "order-confirmation":
+        return this.getOrderConfirmationTemplate(data);
+      case "reset-password":
+        return this.getResetPasswordTemplate(data);
+      case "cart-recovery":
+        return this.getCartRecoveryTemplate(data);
+      default:
+        throw new Error(`Template "${template}" not found`);
+    }
+  }
+
+  /**
+   * Send abandoned cart recovery email
+   * @param {String} email - Recipient email
+   * @param {Object} cart - Cart data
+   * @param {Number} stage - Recovery stage (1, 2, or 3)
+   * @param {String} token - Recovery token
+   * @returns {Promise} Email sending result
+   */
+  async sendAbandonedCartEmail(email, cart, userData, stage, token) {
+    const templateName = `abandoned-cart-reminder-${stage}`;
+    const recoveryUrl = `${process.env.FRONTEND_URL}/cart/recover/${cart._id}/${token}`;
+    const logoUrl = `${process.env.FRONTEND_URL}/assets/images/logo.png`;
+    const unsubscribeUrl = `${process.env.FRONTEND_URL}/preferences/email?unsubscribe=cart`;
+
+    // Prepare common data
+    const data = {
+      firstName: userData ? userData.firstName : "Valued Customer",
+      cartItems: cart.items,
+      cartTotal: cart.total,
+      cartId: cart._id,
+      recoveryUrl,
+      logoUrl,
+      unsubscribeUrl,
+    };
+
+    // Add stage-specific data
+    switch (stage) {
+      case 2:
+        data.discountPercent = 5;
+        break;
+      case 3:
+        data.discountPercent = 10;
+        break;
+    }
+
+    // Add discount code if provided
+    if (cart.recoveryDiscount) {
+      data.discountCode = cart.recoveryDiscount.code;
+    }
+
+    let subject = "";
+    switch (stage) {
+      case 1:
+        subject = "Items in your cart are waiting for you";
+        break;
+      case 2:
+        subject = "Your cart items are still available - Limited time offer!";
+        break;
+      case 3:
+        subject = "Last chance: Complete your purchase with a special offer";
+        break;
+    }
+
+    return await this.sendEmail({
+      to: email,
+      subject,
+      template: templateName,
+      data,
+    });
   }
 
   /**
@@ -283,6 +459,83 @@ class EmailService {
       </div>
     `;
   }
+
+  /**
+   * Get cart recovery email template
+   * @param {Object} data - Template data
+   * @returns {String} HTML content
+   */
+  getCartRecoveryTemplate(data) {
+    // Generate items HTML
+    const itemsHtml = data.items
+      .map(
+        (item) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">
+          <img src="${item.image || "#"}" alt="${
+          item.name
+        }" style="width: 50px; height: 50px; object-fit: cover;">
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${
+          item.name
+        }</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${
+          item.quantity
+        }</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">₹${
+          item.price ? item.price.toFixed(2) : "0.00"
+        }</td>
+      </tr>
+    `
+      )
+      .join("");
+
+    const discountMessage = data.discountCode
+      ? `<p style="font-size: 18px; margin: 20px 0;">Use coupon code <strong style="background-color: #f2f2f2; padding: 3px 7px; border-radius: 4px;">${
+          data.discountCode
+        }</strong> for ${data.discountPercentage || 10}% off your order!</p>`
+      : "";
+
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #4a4a4a; margin-bottom: 5px;">You left something behind!</h1>
+          <p style="font-size: 18px; color: #777;">Your shopping cart is waiting for you</p>
+        </div>
+        
+        <div style="background-color: #f9f9f9; border-radius: 5px; padding: 20px; margin-bottom: 25px;">
+          <h3 style="margin-top: 0; color: #4a4a4a;">Items in your cart:</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f2f2f2;">
+                <th style="text-align: left; padding: 10px;"></th>
+                <th style="text-align: left; padding: 10px;">Product</th>
+                <th style="text-align: left; padding: 10px;">Quantity</th>
+                <th style="text-align: left; padding: 10px;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+        </div>
+        
+        ${discountMessage}
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${data.recoveryUrl}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
+            Complete Your Purchase
+          </a>
+        </div>
+        
+        <p style="color: #777; font-size: 14px; text-align: center; margin-top: 30px;">
+          If you didn't create this cart or have any questions, please contact our support team.
+        </p>
+      </div>
+    `;
+  }
 }
 
-module.exports = new EmailService();
+// Create and export email service instance
+const emailService = new EmailService();
+module.exports = emailService;

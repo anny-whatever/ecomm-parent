@@ -100,6 +100,52 @@ const cartSchema = new mongoose.Schema(
     notes: {
       type: String,
     },
+    // Abandoned cart recovery fields
+    status: {
+      type: String,
+      enum: ["active", "ordered", "abandoned", "expired"],
+      default: "active",
+    },
+    isAbandoned: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    recoveryEmails: {
+      emailsSent: {
+        type: Number,
+        default: 0,
+      },
+      firstEmailSent: {
+        type: Date,
+      },
+      lastEmailSent: {
+        type: Date,
+      },
+      token: {
+        type: String,
+      },
+      discountCodeSent: {
+        type: String,
+      },
+      recovered: {
+        type: Boolean,
+        default: false,
+      },
+      recoveredAt: {
+        type: Date,
+      },
+      convertedOrderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+      },
+    },
+    guestEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
+    },
   },
   {
     timestamps: true,

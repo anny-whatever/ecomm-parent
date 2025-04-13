@@ -60,6 +60,67 @@ const variantSchema = new mongoose.Schema({
   },
 });
 
+// Update the priceSchema to include multi-currency support
+const priceSchema = new mongoose.Schema({
+  regular: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  sale: {
+    type: Number,
+    min: 0,
+  },
+  // Whether this price is on sale
+  onSale: {
+    type: Boolean,
+    default: false,
+  },
+  // The currency this price is in (default is the store's base currency)
+  currency: {
+    type: String,
+    default: process.env.BASE_CURRENCY || "INR",
+    uppercase: true,
+  },
+  // Additional prices in other currencies
+  multiCurrency: [
+    {
+      // Currency code
+      code: {
+        type: String,
+        required: true,
+        uppercase: true,
+      },
+      // Regular price in this currency
+      regular: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      // Sale price in this currency
+      sale: {
+        type: Number,
+        min: 0,
+      },
+      // Whether this price is on sale
+      onSale: {
+        type: Boolean,
+        default: false,
+      },
+      // Whether this price is managed manually (false means auto-converted)
+      isManual: {
+        type: Boolean,
+        default: false,
+      },
+      // When this price was last updated
+      updatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+});
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -230,6 +291,49 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
       index: true,
+    },
+    // Subscription options
+    subscription: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      options: [
+        {
+          name: {
+            type: String,
+            required: function () {
+              return this.subscription && this.subscription.enabled;
+            },
+          },
+          billingCycle: {
+            interval: {
+              type: String,
+              enum: ["day", "week", "month", "year"],
+              default: "month",
+            },
+            frequency: {
+              type: Number,
+              default: 1,
+              min: 1,
+            },
+          },
+          discount: {
+            type: Number,
+            min: 0,
+            max: 100,
+            default: 0,
+            description: "Percentage discount for subscribing",
+          },
+          isDefault: {
+            type: Boolean,
+            default: false,
+          },
+        },
+      ],
+      termsAndConditions: {
+        type: String,
+      },
     },
   },
   {

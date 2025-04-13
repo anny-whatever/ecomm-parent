@@ -1,6 +1,7 @@
 // src/api/cart/cart.routes.js
 const express = require("express");
 const cartController = require("./cart.controller");
+const abandonedCartController = require("../abandoned-cart/abandoned-cart.controller");
 const { authMiddleware } = require("../../middleware/auth.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const cartValidator = require("../../utils/validators/cart.validator");
@@ -100,5 +101,15 @@ router.post(
  * @access  Private
  */
 router.post("/merge", authMiddleware, cartController.mergeGuestCart);
+
+/**
+ * @route   GET /api/v1/cart/recover/:cartId/:token
+ * @desc    Recover abandoned cart from email link
+ * @access  Public
+ */
+router.get(
+  "/recover/:cartId/:token",
+  abandonedCartController.recoverAbandonedCart
+);
 
 module.exports = router;

@@ -439,6 +439,483 @@ const getRelatedContent = async (contentId, limit = 3) => {
   }
 };
 
+/**
+ * Get blog posts with advanced filtering and categorization
+ * @param {Object} filters - Filter criteria
+ * @param {Object} options - Pagination and sorting options
+ * @returns {Promise<Object>} Posts with pagination data
+ */
+const getBlogPosts = async (filters = {}, options = {}) => {
+  try {
+    const query = { type: "post", status: "published" };
+
+    // Add publishedAt filter - only show posts that are published now or in the past
+    query.publishedAt = { $lte: new Date() };
+
+    // Apply category filter if provided
+    if (filters.category) {
+      query.categories = filters.category;
+    }
+
+    // Apply tag filter if provided
+    if (filters.tag) {
+      query.tags = filters.tag;
+    }
+
+    // Apply author filter if provided
+    if (filters.author) {
+      query.author = filters.author;
+    }
+
+    // Apply featured filter if provided
+    if (filters.featured !== undefined) {
+      query.featured = filters.featured;
+    }
+
+    // Apply search filter if provided
+    if (filters.search) {
+      query.$or = [
+        { title: { $regex: filters.search, $options: "i" } },
+        { excerpt: { $regex: filters.search, $options: "i" } },
+        { content: { $regex: filters.search, $options: "i" } },
+      ];
+    }
+
+    // Set up pagination options
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Set up sorting options
+    let sort = {};
+    if (options.sortBy) {
+      sort[options.sortBy] = options.sortOrder === "asc" ? 1 : -1;
+    } else {
+      // Default sort by publish date, newest first
+      sort = { publishedAt: -1 };
+    }
+
+    // Execute query with pagination
+    const posts = await Content.find(query)
+      .populate(
+        "author",
+        "email profile.firstName profile.lastName profile.avatar"
+      )
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Get total count for pagination
+    const total = await Content.countDocuments(query);
+
+    // Format posts for response
+    const formattedPosts = posts.map((post) => formatBlogPost(post));
+
+    return {
+      posts: formattedPosts,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error("Error getting blog posts:", error);
+    throw error;
+  }
+};
+
+/**
+ * Format a blog post for API response
+ * @param {Object} post - Raw post document
+ * @returns {Object} Formatted post
+ */
+const formatBlogPost = (post) => {
+  return {
+    id: post._id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    content: post.content,
+    featured: post.featured || false,
+    featuredImage: post.featuredImage,
+    categories: post.categories || [],
+    tags: post.tags || [],
+    author: post.author
+      ? {
+          id: post.author._id,
+          name: `${post.author.profile?.firstName || ""} ${
+            post.author.profile?.lastName || ""
+          }`.trim(),
+          avatar: post.author.profile?.avatar,
+        }
+      : null,
+    publishedAt: post.publishedAt,
+    readTime: calculateReadTime(post.content),
+    viewCount: post.viewCount || 0,
+    commentCount: post.commentCount || 0,
+  };
+};
+
+/**
+ * Calculate estimated reading time for a blog post
+ * @param {String} content - Post content
+ * @returns {Number} Reading time in minutes
+ */
+const calculateReadTime = (content) => {
+  // Average reading speed: 200-250 words per minute
+  const wordsPerMinute = 225;
+
+  // Count words in content, handling HTML tags
+  const plainText = content.replace(/<[^>]*>/g, " ");
+  const wordCount = plainText.split(/\s+/).filter(Boolean).length;
+
+  // Calculate reading time in minutes
+  const readTime = Math.ceil(wordCount / wordsPerMinute);
+
+  // Return at least 1 minute
+  return Math.max(1, readTime);
+};
+
+/**
+ * Get blog categories with post counts
+ * @returns {Promise<Array>} Categories with post counts
+ */
+const getBlogCategories = async () => {
+  try {
+    // Find all published posts
+    const posts = await Content.find({
+      type: "post",
+      status: "published",
+      publishedAt: { $lte: new Date() },
+    }).select("categories");
+
+    // Count posts in each category
+    const categoryCounts = {};
+
+    posts.forEach((post) => {
+      if (post.categories && post.categories.length > 0) {
+        post.categories.forEach((category) => {
+          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+      }
+    });
+
+    // Format as array of objects
+    const categories = Object.keys(categoryCounts).map((category) => ({
+      name: category,
+      count: categoryCounts[category],
+      slug: category.toLowerCase().replace(/\s+/g, "-"),
+    }));
+
+    // Sort by post count (descending)
+    return categories.sort((a, b) => b.count - a.count);
+  } catch (error) {
+    logger.error("Error getting blog categories:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get related blog posts based on categories and tags
+ * @param {String} postId - Current post ID
+ * @param {Number} limit - Number of related posts to return
+ * @returns {Promise<Array>} Related posts
+ */
+const getRelatedBlogPosts = async (postId, limit = 3) => {
+  try {
+    // Get current post
+    const currentPost = await Content.findById(postId);
+
+    if (!currentPost || currentPost.type !== "post") {
+      throw new NotFoundError("Blog post not found");
+    }
+
+    // Get categories and tags from current post
+    const categories = currentPost.categories || [];
+    const tags = currentPost.tags || [];
+
+    // Find related posts based on categories and tags
+    const relatedPosts = await Content.find({
+      _id: { $ne: postId }, // Exclude current post
+      type: "post",
+      status: "published",
+      publishedAt: { $lte: new Date() },
+      $or: [{ categories: { $in: categories } }, { tags: { $in: tags } }],
+    })
+      .populate(
+        "author",
+        "email profile.firstName profile.lastName profile.avatar"
+      )
+      .sort({ publishedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Format related posts
+    return relatedPosts.map((post) => formatBlogPost(post));
+  } catch (error) {
+    logger.error(`Error getting related posts for ${postId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Schedule content for future publishing
+ * @param {String} contentId - Content ID
+ * @param {Date} publishDate - Future publish date
+ * @returns {Promise<Object>} Updated content
+ */
+const scheduleContent = async (contentId, publishDate) => {
+  try {
+    // Validate publish date is in the future
+    const pubDate = new Date(publishDate);
+    const now = new Date();
+
+    if (pubDate <= now) {
+      throw new BadRequestError("Publish date must be in the future");
+    }
+
+    // Get content
+    const content = await Content.findById(contentId);
+
+    if (!content) {
+      throw new NotFoundError("Content not found");
+    }
+
+    // Update content
+    content.status = "scheduled";
+    content.publishedAt = pubDate;
+    await content.save();
+
+    // Schedule publishing task
+    const schedulerService = require("./scheduler.service");
+    const taskId = `publish_content_${content._id}`;
+
+    // Calculate time difference in milliseconds
+    const timeUntilPublish = pubDate.getTime() - now.getTime();
+
+    // Convert to minutes for cron (minimum 1 minute in the future)
+    const minutesUntilPublish = Math.max(
+      1,
+      Math.ceil(timeUntilPublish / (1000 * 60))
+    );
+
+    // Create a cron expression for the specific date and time
+    const cronDate = pubDate;
+    const cronExpression = `${cronDate.getMinutes()} ${cronDate.getHours()} ${cronDate.getDate()} ${
+      cronDate.getMonth() + 1
+    } *`;
+
+    schedulerService.scheduleTask(taskId, cronExpression, async () => {
+      try {
+        logger.info(
+          `Publishing scheduled content: ${content.title} (${content._id})`
+        );
+        await publishScheduledContent(content._id);
+      } catch (error) {
+        logger.error(
+          `Error publishing scheduled content ${content._id}:`,
+          error
+        );
+      }
+    });
+
+    logger.info(
+      `Content scheduled for publishing: ${
+        content.title
+      } on ${pubDate.toISOString()}`
+    );
+
+    return content;
+  } catch (error) {
+    logger.error(`Error scheduling content ${contentId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Publish scheduled content
+ * @param {String} contentId - Content ID
+ * @returns {Promise<Object>} Published content
+ */
+const publishScheduledContent = async (contentId) => {
+  try {
+    const content = await Content.findById(contentId);
+
+    if (!content) {
+      throw new NotFoundError("Content not found");
+    }
+
+    if (content.status !== "scheduled") {
+      logger.warn(
+        `Content ${contentId} is not in scheduled status, current status: ${content.status}`
+      );
+      return content;
+    }
+
+    // Update status to published
+    content.status = "published";
+
+    // If publishedAt is in the future (might happen if task runs early), set it to now
+    if (content.publishedAt > new Date()) {
+      content.publishedAt = new Date();
+    }
+
+    await content.save();
+
+    logger.info(`Content published: ${content.title} (${content._id})`);
+
+    return content;
+  } catch (error) {
+    logger.error(`Error publishing scheduled content ${contentId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get scheduled content
+ * @param {Object} filters - Filter criteria
+ * @param {Object} options - Pagination and sorting options
+ * @returns {Promise<Object>} Scheduled content with pagination
+ */
+const getScheduledContent = async (filters = {}, options = {}) => {
+  try {
+    const query = { status: "scheduled" };
+
+    // Apply type filter if provided
+    if (filters.type) {
+      query.type = filters.type;
+    }
+
+    // Apply author filter if provided
+    if (filters.author) {
+      query.author = filters.author;
+    }
+
+    // Set up pagination options
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Set up sorting options (default by publish date, ascending)
+    const sort = { publishedAt: 1 };
+
+    // Execute query with pagination
+    const scheduledContent = await Content.find(query)
+      .populate("author", "email profile.firstName profile.lastName")
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    // Get total count for pagination
+    const total = await Content.countDocuments(query);
+
+    return {
+      content: scheduledContent,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    logger.error("Error getting scheduled content:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create a landing page for marketing campaigns
+ * @param {Object} pageData - Landing page data
+ * @returns {Promise<Object>} Created landing page
+ */
+const createLandingPage = async (pageData) => {
+  try {
+    // Ensure required fields
+    if (!pageData.title) {
+      throw new BadRequestError("Title is required");
+    }
+
+    if (!pageData.sections || !Array.isArray(pageData.sections)) {
+      throw new BadRequestError("Page sections are required");
+    }
+
+    // Generate slug if not provided
+    if (!pageData.slug) {
+      pageData.slug = slugify(pageData.title, {
+        lower: true,
+        strict: true,
+      });
+    }
+
+    // Add landing page specific data
+    const landingPageData = {
+      ...pageData,
+      type: "landing_page",
+      status: pageData.status || "draft",
+      metadata: {
+        ...pageData.metadata,
+        isLandingPage: true,
+        campaign: pageData.campaign || null,
+        template: pageData.template || "default",
+        conversionGoal: pageData.conversionGoal || null,
+      },
+    };
+
+    // Create the landing page
+    const landingPage = await createContent(landingPageData);
+
+    return landingPage;
+  } catch (error) {
+    logger.error("Error creating landing page:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get landing page analytics
+ * @param {String} pageId - Landing page ID
+ * @param {Object} options - Analytics options
+ * @returns {Promise<Object>} Landing page analytics
+ */
+const getLandingPageAnalytics = async (pageId, options = {}) => {
+  try {
+    const page = await Content.findById(pageId);
+
+    if (!page || page.type !== "landing_page") {
+      throw new NotFoundError("Landing page not found");
+    }
+
+    // Analytics would typically come from an analytics service
+    // This is a placeholder for that integration
+    return {
+      pageId: page._id,
+      title: page.title,
+      views: page.viewCount || 0,
+      uniqueVisitors: Math.round((page.viewCount || 0) * 0.7), // Simulated unique visitors
+      conversionRate: 3.5, // Simulated conversion rate
+      averageTimeOnPage: "2:15", // Simulated average time
+      bounceRate: 45.2, // Simulated bounce rate
+      topReferrers: [
+        { source: "Google", visits: 120 },
+        { source: "Facebook", visits: 85 },
+        { source: "Email Campaign", visits: 67 },
+      ],
+      deviceBreakdown: {
+        desktop: 65,
+        mobile: 30,
+        tablet: 5,
+      },
+    };
+  } catch (error) {
+    logger.error(`Error getting landing page analytics for ${pageId}:`, error);
+    throw error;
+  }
+};
+
 module.exports = {
   createContent,
   getContentById,
@@ -452,4 +929,14 @@ module.exports = {
   getRecentContent,
   getPopularContent,
   getRelatedContent,
+  getBlogPosts,
+  formatBlogPost,
+  calculateReadTime,
+  getBlogCategories,
+  getRelatedBlogPosts,
+  scheduleContent,
+  publishScheduledContent,
+  getScheduledContent,
+  createLandingPage,
+  getLandingPageAnalytics,
 };

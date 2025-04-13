@@ -17,6 +17,13 @@ const analyticsRoutes = require("./analytics/analytics.routes"); // Analytics ro
 const eventRoutes = require("./events/event.routes"); // New event routes
 const reviewRoutes = require("./reviews/review.routes"); // Review routes
 const searchRoutes = require("./search/search.routes"); // Search routes
+const abandonedCartRoutes = require("./abandoned-cart/abandoned-cart.routes"); // Abandoned cart routes
+const currencyRoutes = require("./currency/currency.routes"); // Currency routes
+const loyaltyRoutes = require("./loyalty/loyalty.routes"); // Loyalty routes
+const {
+  subscriptionRoutes,
+  adminSubscriptionRoutes,
+} = require("./subscriptions/subscription.routes"); // Subscription routes
 
 // Register routes
 router.use("/auth", authRoutes);
@@ -33,6 +40,14 @@ router.use("/analytics", analyticsRoutes); // Register analytics routes
 router.use("/events", eventRoutes); // Register event routes
 router.use("/reviews", reviewRoutes); // Register review routes
 router.use("/search", searchRoutes); // Register search routes
+router.use("/currencies", currencyRoutes); // Register currency routes
+router.use("/loyalty", loyaltyRoutes); // Register loyalty routes
+router.use("/subscriptions", subscriptionRoutes); // Register subscription routes
+
+// Admin routes
+router.use("/admin/abandoned-cart", abandonedCartRoutes); // Register abandoned cart admin routes
+router.use("/admin/currencies", currencyRoutes); // Register currency admin routes
+router.use("/admin/subscriptions", adminSubscriptionRoutes); // Register admin subscription routes
 
 // Health check endpoint
 router.get("/health", (req, res) => {

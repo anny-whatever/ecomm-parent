@@ -89,6 +89,43 @@ const addNotes = Joi.object({
   }),
 });
 
+// Process abandoned carts validation schema
+const processAbandonedCarts = Joi.object({
+  body: Joi.object({
+    minAge: Joi.number()
+      .integer()
+      .min(10)
+      .max(10080)
+      .description("Minimum age in minutes to consider cart abandoned"),
+    maxAge: Joi.number()
+      .integer()
+      .min(Joi.ref("minAge"))
+      .max(43200)
+      .description("Maximum age in minutes to consider cart abandoned"),
+    minValue: Joi.number()
+      .min(0)
+      .description("Minimum cart value to qualify for recovery"),
+    reminderStage: Joi.number()
+      .integer()
+      .min(1)
+      .max(3)
+      .description("Process specific reminder stage only (1, 2, or 3)"),
+    testEmail: Joi.string()
+      .email()
+      .description(
+        "Send test email to this address instead of actual customers"
+      ),
+  }),
+});
+
+// Get cart recovery analytics validation schema
+const getCartRecoveryAnalytics = Joi.object({
+  query: Joi.object({
+    startDate: Joi.date().iso(),
+    endDate: Joi.date().iso().min(Joi.ref("startDate")),
+  }),
+});
+
 module.exports = {
   addItem,
   updateQuantity,
@@ -96,4 +133,6 @@ module.exports = {
   applyCoupon,
   addShipping,
   addNotes,
+  processAbandonedCarts,
+  getCartRecoveryAnalytics,
 };

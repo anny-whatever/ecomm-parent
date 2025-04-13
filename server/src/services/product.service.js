@@ -395,6 +395,628 @@ const deleteProductImage = async (productId, imageIndex) => {
   }
 };
 
+/**
+ * Get product price in specified currency
+ * @param {String} productId - Product ID
+ * @param {String} currencyCode - Currency code
+ * @param {Boolean} includeVariants - Whether to include variant prices
+ * @returns {Promise<Object>} Product with prices in specified currency
+ */
+const getProductPriceInCurrency = async (
+  productId,
+  currencyCode,
+  includeVariants = true
+) => {
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    // If requested currency is the product's base currency, return as is
+    if (product.price.currency === currencyCode) {
+      return product;
+    }
+
+    // Get the currency conversion service
+    const currencyService = require("./currency.service");
+
+    // Check if product has manual pricing for this currency
+    const manualPricing = product.price.multiCurrency?.find(
+      (p) => p.code === currencyCode
+    );
+
+    if (manualPricing) {
+      // Return product with manual pricing
+      const result = product.toObject();
+
+      // Update with manual pricing
+      result.price.convertedRegular = manualPricing.regular;
+      result.price.convertedSale = manualPricing.sale;
+      result.price.convertedOnSale = manualPricing.onSale;
+      result.price.convertedCurrency = currencyCode;
+      result.price.isManualConversion = true;
+
+      // Update variants if required
+      if (includeVariants && result.variants && result.variants.length > 0) {
+        for (let i = 0; i < result.variants.length; i++) {
+          const variant = result.variants[i];
+          const variantManualPricing = variant.price.multiCurrency?.find(
+            (p) => p.code === currencyCode
+          );
+
+          if (variantManualPricing) {
+            variant.price.convertedRegular = variantManualPricing.regular;
+            variant.price.convertedSale = variantManualPricing.sale;
+            variant.price.convertedOnSale = variantManualPricing.onSale;
+            variant.price.convertedCurrency = currencyCode;
+            variant.price.isManualConversion = true;
+          } else {
+            // Convert automatically
+            variant.price.convertedRegular =
+              await currencyService.convertAmount(
+                variant.price.regular,
+                product.price.currency,
+                currencyCode
+              );
+
+            if (variant.price.sale) {
+              variant.price.convertedSale = await currencyService.convertAmount(
+                variant.price.sale,
+                product.price.currency,
+                currencyCode
+              );
+            }
+
+            variant.price.convertedOnSale = variant.price.onSale;
+            variant.price.convertedCurrency = currencyCode;
+            variant.price.isManualConversion = false;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    // No manual pricing, do automatic conversion
+    const result = product.toObject();
+
+    result.price.convertedRegular = await currencyService.convertAmount(
+      product.price.regular,
+      product.price.currency,
+      currencyCode
+    );
+
+    if (product.price.sale) {
+      result.price.convertedSale = await currencyService.convertAmount(
+        product.price.sale,
+        product.price.currency,
+        currencyCode
+      );
+    }
+
+    result.price.convertedOnSale = product.price.onSale;
+    result.price.convertedCurrency = currencyCode;
+    result.price.isManualConversion = false;
+
+    // Update variants if required
+    if (includeVariants && result.variants && result.variants.length > 0) {
+      for (let i = 0; i < result.variants.length; i++) {
+        const variant = result.variants[i];
+        const variantManualPricing = variant.price.multiCurrency?.find(
+          (p) => p.code === currencyCode
+        );
+
+        if (variantManualPricing) {
+          variant.price.convertedRegular = variantManualPricing.regular;
+          variant.price.convertedSale = variantManualPricing.sale;
+          variant.price.convertedOnSale = variantManualPricing.onSale;
+          variant.price.convertedCurrency = currencyCode;
+          variant.price.isManualConversion = true;
+        } else {
+          // Convert automatically
+          variant.price.convertedRegular = await currencyService.convertAmount(
+            variant.price.regular,
+            product.price.currency,
+            currencyCode
+          );
+
+          if (variant.price.sale) {
+            variant.price.convertedSale = await currencyService.convertAmount(
+              variant.price.sale,
+              product.price.currency,
+              currencyCode
+            );
+          }
+
+          variant.price.convertedOnSale = variant.price.onSale;
+          variant.price.convertedCurrency = currencyCode;
+          variant.price.isManualConversion = false;
+        }
+      }
+    }
+
+    return result;
+  } catch (error) {
+    logger.error(
+      `Error getting product price in currency ${currencyCode}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+/**
+ * Update product's multi-currency pricing
+ * @param {String} productId - Product ID
+ * @param {String} currencyCode - Currency code
+ * @param {Object} priceData - Price data in specified currency
+ * @returns {Promise<Object>} Updated product
+ */
+const updateProductCurrencyPricing = async (
+  productId,
+  currencyCode,
+  priceData
+) => {
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    // If updating the base currency, update main price
+    if (product.price.currency === currencyCode) {
+      product.price.regular = priceData.regular;
+
+      if (priceData.sale !== undefined) {
+        product.price.sale = priceData.sale;
+      }
+
+      if (priceData.onSale !== undefined) {
+        product.price.onSale = priceData.onSale;
+      }
+
+      await product.save();
+      return product;
+    }
+
+    // Otherwise, update multi-currency pricing
+    if (!product.price.multiCurrency) {
+      product.price.multiCurrency = [];
+    }
+
+    // Find existing currency pricing
+    const existingPriceIndex = product.price.multiCurrency.findIndex(
+      (p) => p.code === currencyCode
+    );
+
+    if (existingPriceIndex >= 0) {
+      // Update existing
+      product.price.multiCurrency[existingPriceIndex].regular =
+        priceData.regular;
+
+      if (priceData.sale !== undefined) {
+        product.price.multiCurrency[existingPriceIndex].sale = priceData.sale;
+      }
+
+      if (priceData.onSale !== undefined) {
+        product.price.multiCurrency[existingPriceIndex].onSale =
+          priceData.onSale;
+      }
+
+      product.price.multiCurrency[existingPriceIndex].isManual = true;
+      product.price.multiCurrency[existingPriceIndex].updatedAt = new Date();
+    } else {
+      // Add new
+      product.price.multiCurrency.push({
+        code: currencyCode,
+        regular: priceData.regular,
+        sale: priceData.sale,
+        onSale: priceData.onSale || false,
+        isManual: true,
+        updatedAt: new Date(),
+      });
+    }
+
+    // Update variant pricing if provided
+    if (priceData.variants && product.variants && product.variants.length > 0) {
+      for (const variantPricing of priceData.variants) {
+        const variant = product.variants.id(variantPricing.variantId);
+
+        if (!variant) {
+          continue;
+        }
+
+        // Initialize multi-currency array if needed
+        if (!variant.price.multiCurrency) {
+          variant.price.multiCurrency = [];
+        }
+
+        // Find existing variant currency pricing
+        const existingVariantPriceIndex = variant.price.multiCurrency.findIndex(
+          (p) => p.code === currencyCode
+        );
+
+        if (existingVariantPriceIndex >= 0) {
+          // Update existing
+          variant.price.multiCurrency[existingVariantPriceIndex].regular =
+            variantPricing.regular;
+
+          if (variantPricing.sale !== undefined) {
+            variant.price.multiCurrency[existingVariantPriceIndex].sale =
+              variantPricing.sale;
+          }
+
+          if (variantPricing.onSale !== undefined) {
+            variant.price.multiCurrency[existingVariantPriceIndex].onSale =
+              variantPricing.onSale;
+          }
+
+          variant.price.multiCurrency[
+            existingVariantPriceIndex
+          ].isManual = true;
+          variant.price.multiCurrency[existingVariantPriceIndex].updatedAt =
+            new Date();
+        } else {
+          // Add new
+          variant.price.multiCurrency.push({
+            code: currencyCode,
+            regular: variantPricing.regular,
+            sale: variantPricing.sale,
+            onSale: variantPricing.onSale || false,
+            isManual: true,
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
+
+    await product.save();
+    return product;
+  } catch (error) {
+    logger.error(`Error updating product currency pricing:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Update product base currency
+ * @param {String} productId - Product ID
+ * @param {String} newCurrencyCode - New base currency code
+ * @returns {Promise<Object>} Updated product
+ */
+const updateProductBaseCurrency = async (productId, newCurrencyCode) => {
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    // If currency is already the base, do nothing
+    if (product.price.currency === newCurrencyCode) {
+      return product;
+    }
+
+    // Get the currency conversion service
+    const currencyService = require("./currency.service");
+
+    // Check if product has pricing for new base currency
+    const existingPricing = product.price.multiCurrency?.find(
+      (p) => p.code === newCurrencyCode
+    );
+
+    if (existingPricing) {
+      // Store old base currency pricing
+      const oldCurrency = product.price.currency;
+      const oldRegular = product.price.regular;
+      const oldSale = product.price.sale;
+      const oldOnSale = product.price.onSale;
+
+      // Update base currency with existing pricing
+      product.price.currency = newCurrencyCode;
+      product.price.regular = existingPricing.regular;
+      product.price.sale = existingPricing.sale;
+      product.price.onSale = existingPricing.onSale;
+
+      // Remove new base from multi-currency
+      product.price.multiCurrency = product.price.multiCurrency.filter(
+        (p) => p.code !== newCurrencyCode
+      );
+
+      // Add old base to multi-currency
+      product.price.multiCurrency.push({
+        code: oldCurrency,
+        regular: oldRegular,
+        sale: oldSale,
+        onSale: oldOnSale,
+        isManual: true,
+        updatedAt: new Date(),
+      });
+    } else {
+      // Convert pricing to new currency
+      const convertedRegular = await currencyService.convertAmount(
+        product.price.regular,
+        product.price.currency,
+        newCurrencyCode
+      );
+
+      let convertedSale = null;
+      if (product.price.sale) {
+        convertedSale = await currencyService.convertAmount(
+          product.price.sale,
+          product.price.currency,
+          newCurrencyCode
+        );
+      }
+
+      // Store old base currency pricing
+      const oldCurrency = product.price.currency;
+      const oldRegular = product.price.regular;
+      const oldSale = product.price.sale;
+      const oldOnSale = product.price.onSale;
+
+      // Update base currency
+      product.price.currency = newCurrencyCode;
+      product.price.regular = convertedRegular;
+      product.price.sale = convertedSale;
+
+      // Add old base to multi-currency
+      if (!product.price.multiCurrency) {
+        product.price.multiCurrency = [];
+      }
+
+      product.price.multiCurrency.push({
+        code: oldCurrency,
+        regular: oldRegular,
+        sale: oldSale,
+        onSale: oldOnSale,
+        isManual: true,
+        updatedAt: new Date(),
+      });
+    }
+
+    // Now update all variants
+    if (product.variants && product.variants.length > 0) {
+      for (const variant of product.variants) {
+        // Check if variant has pricing for new base currency
+        const existingVariantPricing = variant.price.multiCurrency?.find(
+          (p) => p.code === newCurrencyCode
+        );
+
+        if (existingVariantPricing) {
+          // Store old base currency pricing
+          const oldCurrency = variant.price.currency;
+          const oldRegular = variant.price.regular;
+          const oldSale = variant.price.sale;
+          const oldOnSale = variant.price.onSale;
+
+          // Update base currency with existing pricing
+          variant.price.currency = newCurrencyCode;
+          variant.price.regular = existingVariantPricing.regular;
+          variant.price.sale = existingVariantPricing.sale;
+          variant.price.onSale = existingVariantPricing.onSale;
+
+          // Remove new base from multi-currency
+          variant.price.multiCurrency = variant.price.multiCurrency.filter(
+            (p) => p.code !== newCurrencyCode
+          );
+
+          // Add old base to multi-currency
+          variant.price.multiCurrency.push({
+            code: oldCurrency,
+            regular: oldRegular,
+            sale: oldSale,
+            onSale: oldOnSale,
+            isManual: true,
+            updatedAt: new Date(),
+          });
+        } else {
+          // Convert pricing to new currency
+          const convertedRegular = await currencyService.convertAmount(
+            variant.price.regular,
+            variant.price.currency,
+            newCurrencyCode
+          );
+
+          let convertedSale = null;
+          if (variant.price.sale) {
+            convertedSale = await currencyService.convertAmount(
+              variant.price.sale,
+              variant.price.currency,
+              newCurrencyCode
+            );
+          }
+
+          // Store old base currency pricing
+          const oldCurrency = variant.price.currency;
+          const oldRegular = variant.price.regular;
+          const oldSale = variant.price.sale;
+          const oldOnSale = variant.price.onSale;
+
+          // Update base currency
+          variant.price.currency = newCurrencyCode;
+          variant.price.regular = convertedRegular;
+          variant.price.sale = convertedSale;
+
+          // Add old base to multi-currency
+          if (!variant.price.multiCurrency) {
+            variant.price.multiCurrency = [];
+          }
+
+          variant.price.multiCurrency.push({
+            code: oldCurrency,
+            regular: oldRegular,
+            sale: oldSale,
+            onSale: oldOnSale,
+            isManual: true,
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
+
+    await product.save();
+    return product;
+  } catch (error) {
+    logger.error(`Error updating product base currency:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Enable subscriptions for a product
+ * @param {String} productId - Product ID
+ * @param {Object} subscriptionData - Subscription options
+ * @returns {Promise<Object>} Updated product
+ */
+const enableSubscription = async (productId, subscriptionData) => {
+  try {
+    const product = await getProductById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    // Add subscription options
+    product.subscription = {
+      enabled: true,
+      options: subscriptionData.options || [],
+      termsAndConditions: subscriptionData.termsAndConditions,
+    };
+
+    // Make sure at least one option is set as default
+    if (
+      product.subscription.options.length > 0 &&
+      !product.subscription.options.some((option) => option.isDefault)
+    ) {
+      product.subscription.options[0].isDefault = true;
+    }
+
+    await product.save();
+    logger.info(`Subscriptions enabled for product ${productId}`);
+
+    return product;
+  } catch (error) {
+    logger.error(
+      `Error enabling subscriptions for product ${productId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+/**
+ * Disable subscriptions for a product
+ * @param {String} productId - Product ID
+ * @returns {Promise<Object>} Updated product
+ */
+const disableSubscription = async (productId) => {
+  try {
+    const product = await getProductById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    // Check if product is used in any active subscriptions
+    // This would require querying the Subscription model to see if any users
+    // have active subscriptions for this product
+
+    // Disable subscriptions
+    product.subscription.enabled = false;
+
+    await product.save();
+    logger.info(`Subscriptions disabled for product ${productId}`);
+
+    return product;
+  } catch (error) {
+    logger.error(
+      `Error disabling subscriptions for product ${productId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+/**
+ * Update subscription options for a product
+ * @param {String} productId - Product ID
+ * @param {Array} options - Subscription options
+ * @returns {Promise<Object>} Updated product
+ */
+const updateSubscriptionOptions = async (productId, options) => {
+  try {
+    const product = await getProductById(productId);
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    if (!product.subscription) {
+      product.subscription = {
+        enabled: true,
+        options: [],
+      };
+    }
+
+    product.subscription.options = options;
+
+    // Make sure at least one option is set as default
+    if (
+      product.subscription.options.length > 0 &&
+      !product.subscription.options.some((option) => option.isDefault)
+    ) {
+      product.subscription.options[0].isDefault = true;
+    }
+
+    await product.save();
+    logger.info(`Subscription options updated for product ${productId}`);
+
+    return product;
+  } catch (error) {
+    logger.error(
+      `Error updating subscription options for product ${productId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+/**
+ * Get all subscription-enabled products
+ * @param {Object} options - Query options
+ * @returns {Promise<Array>} Array of subscription-enabled products
+ */
+const getSubscriptionProducts = async (options = {}) => {
+  try {
+    const { limit = 20, skip = 0, status = "active" } = options;
+
+    const query = {
+      "subscription.enabled": true,
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const products = await Product.find(query)
+      .select("name slug price description images subscription")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
+
+    const count = await Product.countDocuments(query);
+
+    return { products, count };
+  } catch (error) {
+    logger.error("Error fetching subscription products:", error);
+    throw new InternalServerError("Failed to fetch subscription products");
+  }
+};
+
 module.exports = {
   createProduct,
   updateProduct,
@@ -405,4 +1027,11 @@ module.exports = {
   getRelatedProducts,
   uploadProductImages,
   deleteProductImage,
+  getProductPriceInCurrency,
+  updateProductCurrencyPricing,
+  updateProductBaseCurrency,
+  enableSubscription,
+  disableSubscription,
+  updateSubscriptionOptions,
+  getSubscriptionProducts,
 };

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Limited Time Offer - Your Cart Items</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        text-align: center;
+        padding: 20px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .logo {
+        max-width: 150px;
+        height: auto;
+      }
+      .content {
+        padding: 20px 0;
+      }
+      .cart-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+      }
+      .cart-item img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        margin-right: 15px;
+      }
+      .item-details {
+        flex: 1;
+      }
+      .price {
+        font-weight: bold;
+        color: #e53935;
+      }
+      .cta-button {
+        display: inline-block;
+        background-color: #e53935;
+        color: white;
+        text-decoration: none;
+        padding: 12px 30px;
+        border-radius: 4px;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .footer {
+        text-align: center;
+        padding: 20px 0;
+        font-size: 12px;
+        color: #888;
+        border-top: 1px solid #eee;
+      }
+      .urgency {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .discount-box {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .discount-code {
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px dashed #155724;
+        display: inline-block;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="{{logoUrl}}" alt="Store Logo" class="logo" />
+        <h1>Your Cart Items Are Still Available</h1>
+      </div>
+
+      <div class="content">
+        <p>Hello {{firstName}},</p>
+
+        <p>
+          We wanted to remind you that the items in your cart are still waiting
+          for you, but they might not be available for long!
+        </p>
+
+        <div class="urgency">
+          <p>
+            <strong>⏰ LIMITED TIME OFFER:</strong> Complete your purchase soon
+            as these items are in high demand and stock may be limited.
+          </p>
+        </div>
+
+        {{#if discountCode}}
+        <div class="discount-box">
+          <h3>Special Offer Just For You!</h3>
+          <p>
+            We'd like to offer you
+            <strong>{{discountPercent}}% off</strong> your purchase when you
+            complete your order now.
+          </p>
+          <p>Use code:</p>
+          <div class="discount-code">{{discountCode}}</div>
+          <p>
+            Valid for 7 days only. Applied automatically when you click the
+            button below.
+          </p>
+        </div>
+        {{/if}}
+
+        <h3>Your Cart Items:</h3>
+
+        {{#each cartItems}}
+        <div class="cart-item">
+          {{#if image}}
+          <img src="{{image}}" alt="{{name}}" />
+          {{/if}}
+          <div class="item-details">
+            <h4>{{name}}</h4>
+            <p>Quantity: {{quantity}}</p>
+            <p class="price">₹{{price}}</p>
+          </div>
+        </div>
+        {{/each}}
+
+        <div style="text-align: right; margin-top: 15px">
+          <p><strong>Total: ₹{{cartTotal}}</strong></p>
+          {{#if discountCode}}
+          <p>
+            <strong
+              >After Discount: ₹{{calculateDiscountedTotal cartTotal
+              discountPercent}}</strong
+            >
+          </p>
+          {{/if}}
+        </div>
+
+        <div style="text-align: center">
+          <a href="{{recoveryUrl}}" class="cta-button"
+            >Complete Your Purchase Now</a
+          >
+        </div>
+
+        <p>
+          If you have any questions or need assistance, our customer service
+          team is ready to help at support@example.com.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>© 2023 Your Store. All Rights Reserved.</p>
+        <p>
+          If you prefer not to receive these reminders, you can
+          <a href="{{unsubscribeUrl}}">unsubscribe here</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
