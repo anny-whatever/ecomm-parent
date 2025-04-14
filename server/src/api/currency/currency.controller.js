@@ -15,13 +15,11 @@ const getAllCurrencies = async (req, res, next) => {
 
     const currencies = await currencyService.getAllCurrencies(options);
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Currencies retrieved successfully", {
-          currencies,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Currencies retrieved successfully", {
+        currencies,
+      })
+    );
   } catch (error) {
     logger.error("Error retrieving currencies:", error);
     next(error);
@@ -59,13 +57,11 @@ const getBaseCurrency = async (req, res, next) => {
   try {
     const currency = await currencyService.getBaseCurrency();
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Base currency retrieved successfully", {
-          currency,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Base currency retrieved successfully", {
+        currency,
+      })
+    );
   } catch (error) {
     logger.error("Error retrieving base currency:", error);
     next(error);

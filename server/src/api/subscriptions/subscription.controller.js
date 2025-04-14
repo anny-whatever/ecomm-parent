@@ -20,13 +20,11 @@ const getAllPlans = async (req, res, next) => {
 
     const plans = await subscriptionService.getAllPlans(options);
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Subscription plans retrieved successfully", {
-          plans,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Subscription plans retrieved successfully", {
+        plans,
+      })
+    );
   } catch (error) {
     logger.error("Error fetching subscription plans:", error);
     next(error);
@@ -44,13 +42,11 @@ const getPlan = async (req, res, next) => {
 
     const plan = await subscriptionService.getPlan(identifier);
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Subscription plan retrieved successfully", {
-          plan,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Subscription plan retrieved successfully", {
+        plan,
+      })
+    );
   } catch (error) {
     logger.error(
       `Error fetching subscription plan ${req.params.identifier}:`,
@@ -72,13 +68,11 @@ const createPlan = async (req, res, next) => {
 
     const plan = await subscriptionService.createPlan(planData);
 
-    return res
-      .status(201)
-      .json(
-        responseFormatter(true, "Subscription plan created successfully", {
-          plan,
-        })
-      );
+    return res.status(201).json(
+      responseFormatter(true, "Subscription plan created successfully", {
+        plan,
+      })
+    );
   } catch (error) {
     logger.error("Error creating subscription plan:", error);
     next(error);
@@ -97,13 +91,11 @@ const updatePlan = async (req, res, next) => {
 
     const plan = await subscriptionService.updatePlan(planId, updateData);
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Subscription plan updated successfully", {
-          plan,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Subscription plan updated successfully", {
+        plan,
+      })
+    );
   } catch (error) {
     logger.error(
       `Error updating subscription plan ${req.params.planId}:`,
@@ -124,13 +116,11 @@ const deletePlan = async (req, res, next) => {
 
     const plan = await subscriptionService.deletePlan(planId);
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Subscription plan deleted successfully", {
-          plan,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Subscription plan deleted successfully", {
+        plan,
+      })
+    );
   } catch (error) {
     logger.error(
       `Error deleting subscription plan ${req.params.planId}:`,
@@ -158,13 +148,11 @@ const subscribe = async (req, res, next) => {
       subscriptionData
     );
 
-    return res
-      .status(201)
-      .json(
-        responseFormatter(true, "Subscription created successfully", {
-          subscription,
-        })
-      );
+    return res.status(201).json(
+      responseFormatter(true, "Subscription created successfully", {
+        subscription,
+      })
+    );
   } catch (error) {
     logger.error("Error creating subscription:", error);
     next(error);
@@ -182,13 +170,11 @@ const getUserSubscriptions = async (req, res, next) => {
       req.user._id
     );
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "User subscriptions retrieved successfully", {
-          subscriptions,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "User subscriptions retrieved successfully", {
+        subscriptions,
+      })
+    );
   } catch (error) {
     logger.error(
       `Error fetching subscriptions for user ${req.user._id}:`,
@@ -221,13 +207,11 @@ const getSubscription = async (req, res, next) => {
       );
     }
 
-    return res
-      .status(200)
-      .json(
-        responseFormatter(true, "Subscription retrieved successfully", {
-          subscription,
-        })
-      );
+    return res.status(200).json(
+      responseFormatter(true, "Subscription retrieved successfully", {
+        subscription,
+      })
+    );
   } catch (error) {
     logger.error(
       `Error fetching subscription ${req.params.subscriptionId}:`,
