@@ -16,7 +16,7 @@ The frontend implementation follows a modern, component-based architecture with 
 │                                     │
 │  ┌───────────────┐ ┌───────────────┐│
 │  │   Storefront  │ │  Admin Panel  ││
-│  │    (Next.js)  │ │   (Next.js)   ││
+│  │    (React+Vite)│ │  (React+Vite) ││
 │  └───────────────┘ └───────────────┘│
 └───────────────┬─────────────────────┘
                 │
@@ -58,47 +58,46 @@ The frontend implementation follows a modern, component-based architecture with 
    - Local component state for UI-specific state
 
 4. **Rendering Strategy**
-   - Server-side rendering (SSR) for SEO-critical pages
-   - Static site generation (SSG) for content-heavy pages
-   - Incremental Static Regeneration (ISR) for semi-dynamic content
-   - Client-side rendering (CSR) for highly personalized UI
+   - Client-side rendering (CSR) with optimized initial loads
+   - SEO optimization through meta tags and structured data
+   - Code splitting for performance optimization
+   - Lazy loading for non-critical components
 
 ## Technology Stack
 
 ### Core Technologies
 
-| Category         | Technology                   | Purpose                                            |
-| ---------------- | ---------------------------- | -------------------------------------------------- |
-| Framework        | Next.js 14+                  | React framework with hybrid rendering capabilities |
-| UI Library       | React 18+                    | Component-based UI development                     |
-| Language         | TypeScript 5+                | Type-safe JavaScript development                   |
-| Styling          | Tailwind CSS                 | Utility-first CSS framework                        |
-| State Management | React Context + useReducer   | Global state management                            |
-| Data Fetching    | React Query                  | Server state management and caching                |
-| Forms            | React Hook Form + Zod        | Form handling with validation                      |
-| Routing          | Next.js Router               | Page routing and navigation                        |
-| Animation        | Framer Motion                | UI animations and transitions                      |
-| Testing          | Jest + React Testing Library | Unit and integration testing                       |
-| E2E Testing      | Playwright                   | End-to-end testing                                 |
-| API Client       | Axios                        | HTTP client for API requests                       |
-| Build Tool       | Turbopack (Next.js)          | Fast builds and development experience             |
+| Category         | Technology                     | Purpose                                      |
+| ---------------- | ------------------------------ | -------------------------------------------- |
+| Framework        | React 18+                      | Component-based UI development               |
+| Build Tool       | Vite                           | Fast development server and optimized builds |
+| Language         | TypeScript 5+                  | Type-safe JavaScript development             |
+| Styling          | Tailwind CSS 3+                | Utility-first CSS framework                  |
+| State Management | React Context + useReducer     | Global state management                      |
+| Data Fetching    | React Query                    | Server state management and caching          |
+| Forms            | React Hook Form + Zod          | Form handling with validation                |
+| Routing          | React Router                   | Page routing and navigation                  |
+| Animation        | anime.js                       | UI animations and transitions                |
+| Testing          | Vitest + React Testing Library | Unit and integration testing                 |
+| E2E Testing      | Playwright                     | End-to-end testing                           |
+| API Client       | Axios                          | HTTP client for API requests                 |
 
 ### Supporting Libraries
 
-| Category             | Libraries                    | Purpose                               |
-| -------------------- | ---------------------------- | ------------------------------------- |
-| UI Components        | Headless UI, Radix UI        | Accessible UI primitives              |
-| Data Visualization   | Recharts, Visx               | Charts and graphs for analytics       |
-| Date Handling        | date-fns                     | Date manipulation and formatting      |
-| Form Validation      | Zod                          | Schema validation                     |
-| Internationalization | next-intl                    | Localization support                  |
-| Icons                | Heroicons, Lucide Icons      | SVG icon system                       |
-| Rich Text            | TipTap                       | Rich text editing (admin)             |
-| Image                | next/image, react-image-zoom | Image optimization and interactions   |
-| Table                | TanStack Table               | Data table with sorting, filtering    |
-| Maps                 | Mapbox GL JS                 | Store locator, delivery visualization |
-| File Upload          | react-dropzone               | File uploading with drag-and-drop     |
-| Authentication       | Auth.js (NextAuth.js)        | Authentication providers integration  |
+| Category             | Libraries               | Purpose                               |
+| -------------------- | ----------------------- | ------------------------------------- |
+| UI Components        | Headless UI, Radix UI   | Accessible UI primitives              |
+| Data Visualization   | Recharts, Visx          | Charts and graphs for analytics       |
+| Date Handling        | date-fns                | Date manipulation and formatting      |
+| Form Validation      | Zod                     | Schema validation                     |
+| Internationalization | i18next                 | Localization support                  |
+| Icons                | Heroicons, Lucide Icons | SVG icon system                       |
+| Rich Text            | TipTap                  | Rich text editing (admin)             |
+| Image                | react-image-zoom        | Image optimization and interactions   |
+| Table                | TanStack Table          | Data table with sorting, filtering    |
+| Maps                 | Mapbox GL JS            | Store locator, delivery visualization |
+| File Upload          | react-dropzone          | File uploading with drag-and-drop     |
+| Authentication       | JWT                     | Authentication token management       |
 
 ## Project Structure
 
@@ -132,22 +131,19 @@ apps/storefront/
 │   │   ├── common/          # Common components
 │   │   ├── layout/          # Layout components
 │   │   └── features/        # Feature-specific components
-│   ├── pages/               # Next.js pages
-│   │   ├── api/             # API routes
-│   │   ├── products/        # Product pages
-│   │   ├── category/        # Category pages
-│   │   ├── cart/            # Cart pages
-│   │   ├── checkout/        # Checkout pages
-│   │   ├── account/         # User account pages
-│   │   └── [...other]/      # Other page routes
+│   ├── pages/               # Page components
+│   ├── routes/              # React Router configuration
 │   ├── hooks/               # App-specific custom hooks
 │   ├── context/             # React context providers
-│   ├── store/               # Redux store (if used)
+│   ├── store/               # State management (if used)
 │   ├── utils/               # App-specific utilities
 │   ├── services/            # Service integrations
 │   ├── styles/              # Global styles and theme
+│   ├── animations/          # Anime.js animations
+│   ├── assets/              # Local assets
 │   └── constants/           # App constants and config
-├── next.config.js           # Next.js configuration
+├── index.html               # Entry HTML file
+├── vite.config.js           # Vite configuration
 ├── tailwind.config.js       # Tailwind CSS configuration
 └── tsconfig.json            # TypeScript configuration
 ```
@@ -163,21 +159,19 @@ apps/admin/
 │   │   ├── layout/          # Layout components
 │   │   ├── dashboard/       # Dashboard components
 │   │   └── modules/         # Module-specific components
-│   ├── pages/               # Next.js pages
-│   │   ├── api/             # API routes
-│   │   ├── dashboard/       # Dashboard pages
-│   │   ├── products/        # Product management
-│   │   ├── orders/          # Order management
-│   │   ├── customers/       # Customer management
-│   │   └── [...other]/      # Other admin sections
+│   ├── pages/               # Page components
+│   ├── routes/              # React Router configuration
 │   ├── hooks/               # App-specific custom hooks
 │   ├── context/             # React context providers
-│   ├── store/               # Redux store (if used)
+│   ├── store/               # State management (if used)
 │   ├── utils/               # App-specific utilities
 │   ├── services/            # Service integrations
 │   ├── styles/              # Global styles and theme
+│   ├── animations/          # Anime.js animations
+│   ├── assets/              # Local assets
 │   └── constants/           # App constants and config
-├── next.config.js           # Next.js configuration
+├── index.html               # Entry HTML file
+├── vite.config.js           # Vite configuration
 ├── tailwind.config.js       # Tailwind CSS configuration
 └── tsconfig.json            # TypeScript configuration
 ```
@@ -199,6 +193,7 @@ packages/ui/
 │   ├── hooks/               # Component-related hooks
 │   ├── types/               # Component type definitions
 │   ├── styles/              # Component styles
+│   ├── animations/          # Shared anime.js animations
 │   └── constants/           # UI constants
 ├── index.ts                 # Package entry point
 └── tsconfig.json            # TypeScript configuration
@@ -250,235 +245,170 @@ export function useProducts(params: ProductQueryParams) {
     queryKey: ["products", params],
     queryFn: () => productService.getProducts(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    keepPreviousData: true, // Keep previous data while loading
   });
 }
 ```
 
-3. **Optimistic UI Strategy**
-   - Immediate UI updates before server confirmation
-   - Temporary state management for optimistic changes
-   - Automatic rollback on server errors
-   - Seamless background synchronization
-   - Conflict resolution for concurrent updates
+## State Management Architecture
+
+### Local Component State
+
+- UI state specific to a component
+- Form input state
+- Visibility toggles
+- Animation states
+
+### Context-Based Global State
+
+- User authentication state
+- Shopping cart
+- UI theme preferences
+- Feature flags
+- Notifications
 
 ```typescript
-// Example optimistic update pattern
-function useOptimisticCartUpdate() {
-  const queryClient = useQueryClient();
+// Example of Auth Context
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
-  return useMutation({
-    mutationFn: ({ productId, quantity }) =>
-      cartService.updateItem(productId, quantity),
-    onMutate: async (variables) => {
-      // Cancel outgoing refetches to avoid overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ["cart"] });
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-      // Snapshot previous cart value
-      const previousCart = queryClient.getQueryData(["cart"]);
+  // Authentication logic
 
-      // Optimistically update cart
-      queryClient.setQueryData(["cart"], (old) => ({
-        ...old,
-        items: old.items.map((item) =>
-          item.id === variables.productId
-            ? { ...item, quantity: variables.quantity }
-            : item
-        ),
-      }));
+  const value = {
+    user,
+    loading,
+    login,
+    logout,
+    register,
+  };
 
-      return { previousCart };
-    },
-    onError: (err, variables, context) => {
-      // On error, roll back to previous cart value
-      queryClient.setQueryData(["cart"], context.previousCart);
-      showNotification("Failed to update cart. Please try again.");
-    },
-    onSettled: () => {
-      // Always refetch cart after mutation to ensure server consistency
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    },
-  });
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 ```
 
-### State Management
+### Server State with React Query
 
-1. **Client State with Context + useReducer**
+- Product data
+- Category information
+- Order history
+- User profile data
+- Analytics data
 
-   ```typescript
-   // Example Context with useReducer pattern
-   import { createContext, useReducer, useContext } from "react";
+## Animation Strategy
 
-   // Define state and actions
-   type CartItem = {
-     id: string;
-     name: string;
-     price: number;
-     quantity: number;
-   };
+The application uses anime.js for creating fluid, performant animations:
 
-   type CartState = {
-     items: CartItem[];
-     itemCount: number;
-     total: number;
-   };
+1. **Component Transitions**
 
-   type CartAction =
-     | { type: "ADD_ITEM"; payload: CartItem }
-     | { type: "REMOVE_ITEM"; payload: { id: string } }
-     | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-     | { type: "CLEAR_CART" };
+   - Page transitions
+   - Element enter/exit animations
+   - Hover and interaction effects
 
-   // Create the reducer
-   const cartReducer = (state: CartState, action: CartAction): CartState => {
-     switch (action.type) {
-       case "ADD_ITEM": {
-         const existingItem = state.items.find(
-           (item) => item.id === action.payload.id
-         );
+2. **UI Feedback**
 
-         if (existingItem) {
-           // Update existing item
-           return {
-             ...state,
-             items: state.items.map((item) =>
-               item.id === action.payload.id
-                 ? {
-                     ...item,
-                     quantity: item.quantity + action.payload.quantity,
-                   }
-                 : item
-             ),
-             itemCount: state.itemCount + action.payload.quantity,
-             total:
-               state.total + action.payload.price * action.payload.quantity,
-           };
-         } else {
-           // Add new item
-           return {
-             ...state,
-             items: [...state.items, action.payload],
-             itemCount: state.itemCount + action.payload.quantity,
-             total:
-               state.total + action.payload.price * action.payload.quantity,
-           };
-         }
-       }
+   - Loading states
+   - Success/error indicators
+   - Notification animations
 
-       case "REMOVE_ITEM": {
-         const itemToRemove = state.items.find(
-           (item) => item.id === action.payload.id
-         );
-         if (!itemToRemove) return state;
+3. **Microinteractions**
+   - Button effects
+   - Scroll animations
+   - Cart updates
 
-         return {
-           ...state,
-           items: state.items.filter((item) => item.id !== action.payload.id),
-           itemCount: state.itemCount - itemToRemove.quantity,
-           total: state.total - itemToRemove.price * itemToRemove.quantity,
-         };
-       }
+```typescript
+// Example anime.js animation
+import anime from "animejs";
+import { useEffect, useRef } from "react";
 
-       case "UPDATE_QUANTITY": {
-         const itemToUpdate = state.items.find(
-           (item) => item.id === action.payload.id
-         );
-         if (!itemToUpdate) return state;
+export function FadeInComponent() {
+  const elementRef = useRef(null);
 
-         const quantityDiff = action.payload.quantity - itemToUpdate.quantity;
+  useEffect(() => {
+    anime({
+      targets: elementRef.current,
+      opacity: [0, 1],
+      translateY: [20, 0],
+      duration: 600,
+      easing: "easeOutCubic",
+    });
+  }, []);
 
-         return {
-           ...state,
-           items: state.items.map((item) =>
-             item.id === action.payload.id
-               ? { ...item, quantity: action.payload.quantity }
-               : item
-           ),
-           itemCount: state.itemCount + quantityDiff,
-           total: state.total + itemToUpdate.price * quantityDiff,
-         };
-       }
+  return <div ref={elementRef}>Content to animate</div>;
+}
+```
 
-       case "CLEAR_CART":
-         return {
-           items: [],
-           itemCount: 0,
-           total: 0,
-         };
+## Performance Optimization Strategy
 
-       default:
-         return state;
-     }
-   };
+1. **Code Splitting and Lazy Loading**
 
-   // Initial state
-   const initialCartState: CartState = {
-     items: [],
-     itemCount: 0,
-     total: 0,
-   };
+   - Route-based code splitting
+   - Component lazy loading
+   - Critical CSS extraction
 
-   // Create the context
-   const CartContext = createContext<
-     | {
-         state: CartState;
-         dispatch: React.Dispatch<CartAction>;
-       }
-     | undefined
-   >(undefined);
+2. **Asset Optimization**
 
-   // Create provider component
-   export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
-     children,
-   }) => {
-     const [state, dispatch] = useReducer(cartReducer, initialCartState);
+   - Image compression and proper sizing
+   - SVG optimization
+   - Font loading strategy
 
-     return (
-       <CartContext.Provider value={{ state, dispatch }}>
-         {children}
-       </CartContext.Provider>
-     );
-   };
+3. **Rendering Optimization**
 
-   // Create custom hook for using the cart
-   export const useCart = () => {
-     const context = useContext(CartContext);
-     if (context === undefined) {
-       throw new Error("useCart must be used within a CartProvider");
-     }
-     return context;
-   };
-   ```
+   - Memoization (useMemo, memo)
+   - Virtualized lists for large datasets
+   - Windowing techniques
 
-2. **Server State with React Query**
+4. **Network Optimization**
+   - API request batching
+   - Cache strategies with React Query
+   - Prefetching critical resources
 
-   ```typescript
-   // Product listing with React Query
-   const useProducts = (filters) => {
-     return useQuery({
-       queryKey: ["products", filters],
-       queryFn: () => productService.getProducts(filters),
-       staleTime: 5 * 60 * 1000, // 5 minutes
-     });
-   };
+## Testing Strategy
 
-   // Using the query in a component
-   const ProductList = ({ category }) => {
-     const { data, isLoading, error } = useProducts({ category });
+1. **Unit Testing**
 
-     if (isLoading) return <ProductSkeleton count={8} />;
-     if (error) return <ErrorMessage message="Failed to load products" />;
+   - Component testing with React Testing Library
+   - Hook testing
+   - Utility function testing
 
-     return (
-       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-         {data.products.map((product) => (
-           <ProductCard key={product.id} product={product} />
-         ))}
-       </div>
-     );
-   };
-   ```
+2. **Integration Testing**
+
+   - User flow testing
+   - API integration testing
+   - State management testing
+
+3. **End-to-End Testing**
+
+   - Critical user journeys
+   - Checkout process
+   - Authentication flows
+
+4. **Visual Regression Testing**
+   - Component visual stability
+   - Responsive design testing
+   - Theme variations
+
+## Deployment and CI/CD
+
+1. **Build Process**
+
+   - Optimized production builds
+   - Environment-specific configurations
+   - Asset optimization
+
+2. **Continuous Integration**
+
+   - Automated testing
+   - Linting and type checking
+   - Bundle size monitoring
+
+3. **Deployment Strategy**
+   - Staged deployments
+   - Feature flags for phased rollouts
+   - Rollback capabilities
 
 ## Authentication & Security
 
@@ -512,165 +442,6 @@ function useOptimisticCartUpdate() {
    - Strict Content Security Policy
    - XSS prevention measures
    - Sanitization of user-generated content
-
-## Performance Optimization
-
-### Loading Performance
-
-1. **Code Splitting**
-
-   - Route-based code splitting
-   - Component-level code splitting
-   - Dynamic imports for heavy components
-
-2. **Image Optimization**
-
-   - Responsive images with next/image
-   - Optimal formats (WebP, AVIF)
-   - Lazy loading
-   - Image prioritization for above-the-fold content
-
-3. **Font Optimization**
-   - Web font loading strategy
-   - Font display settings
-   - Font subset loading
-
-### Runtime Performance
-
-1. **Rendering Optimization**
-
-   - Component memoization
-   - Virtualization for long lists
-   - Debouncing and throttling
-   - Avoiding unnecessary re-renders
-
-2. **Animation Performance**
-   - GPU-accelerated animations
-   - Reduced motion for accessibility
-   - Optimized transition effects
-
-### Network Optimization
-
-1. **Data Fetching**
-
-   - Request deduplication
-   - Caching strategy
-   - Incremental loading
-   - Request batching where applicable
-
-2. **API Efficiency**
-   - GraphQL for data aggregation
-   - Field selection to minimize payload size
-   - Compression
-
-## Testing Strategy
-
-### Testing Pyramid
-
-1. **Unit Tests**
-
-   - Component rendering tests
-   - Utility function tests
-   - Hook tests
-   - State logic tests
-
-2. **Integration Tests**
-
-   - Component interaction tests
-   - Form submission flow tests
-   - API integration tests
-   - Context provider tests
-
-3. **End-to-End Tests**
-   - Critical user flows
-   - Cross-browser compatibility
-   - Responsive design testing
-
-### Testing Tools and Patterns
-
-1. **Jest + React Testing Library**
-
-   - Component testing with user-centric approach
-   - Mock service worker for API mocking
-   - Snapshot testing where appropriate
-
-2. **Playwright**
-   - Cross-browser end-to-end testing
-   - Visual regression testing
-   - Accessibility testing
-
-## CI/CD Pipeline
-
-### Build and Deployment Pipeline
-
-1. **Continuous Integration**
-
-   - Automated testing on pull requests
-   - Linting and type checking
-   - Bundle size monitoring
-   - Lighthouse performance testing
-
-2. **Continuous Deployment**
-   - Staging environment deployment for validation
-   - Production deployment with rollback capability
-   - Feature flags for controlled rollout
-
-### Environment Configuration
-
-1. **Development Environment**
-
-   - Local development server
-   - Mock API options
-   - Hot module replacement
-   - Development tools and debugging
-
-2. **Staging Environment**
-
-   - Production-like configuration
-   - Test data
-   - Integration with staging backend
-   - Preview deployments for pull requests
-
-3. **Production Environment**
-   - Optimized builds
-   - CDN integration
-   - Monitoring and analytics
-   - Error tracking
-
-## Development Workflow
-
-### Code Quality Standards
-
-1. **Code Formatting**
-
-   - Prettier for consistent formatting
-   - ESLint for code quality rules
-   - Stylelint for CSS/SCSS
-
-2. **TypeScript Standards**
-
-   - Strict type checking
-   - Comprehensive type coverage
-   - Interface-driven development
-
-3. **Component Development**
-   - Component documentation with Storybook
-   - Accessibility compliance checking
-   - Mobile-first responsive design
-
-### Version Control Workflow
-
-1. **Git Flow**
-
-   - Feature branches
-   - Pull request workflow
-   - Code review process
-   - Release management
-
-2. **Commit Standards**
-   - Conventional commits
-   - Semantic versioning
-   - Changelog generation
 
 ## Monitoring and Analytics
 

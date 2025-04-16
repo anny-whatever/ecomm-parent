@@ -4,6 +4,22 @@
 
 This document outlines the detailed implementation plan for the admin CRM system of our e-commerce platform. The admin system will provide comprehensive management capabilities for all aspects of the e-commerce business, from product and inventory management to customer relations and analytics.
 
+## Technology Stack
+
+- **Core Framework**: React 18+ with Vite
+- **State Management**: React Context API + useReducer
+- **Server State**: React Query for data fetching and caching
+- **Styling**: Tailwind CSS 3+
+- **Routing**: React Router
+- **Forms**: React Hook Form with Zod validation
+- **Tables**: TanStack Table (React Table)
+- **Charts**: Recharts for data visualization
+- **Animation**: anime.js for UI interactions and transitions
+- **API Client**: Axios with custom interceptors
+- **Date Handling**: date-fns
+- **Authentication**: JWT with HTTP-only cookies
+- **File Upload**: react-dropzone
+
 ## Admin CRM Modules
 
 ### 1. Dashboard & Analytics Hub
@@ -249,248 +265,519 @@ This document outlines the detailed implementation plan for the admin CRM system
 - Transaction list with filtering
 - Detailed transaction view
 - Refund processing
-- Chargeback management
-- Payment reconciliation tools
+- Payment dispute management
+- Export and reporting
 
 #### Tax Configuration
 
-- Tax zone setup
 - Tax rule creation
-- Product tax class management
-- Customer tax class management
+- Tax rate management
 - Tax exemption handling
-- Tax reporting tools
-- VAT/GST configuration
+- Tax reporting
+- Multi-jurisdiction support
+- Automated tax calculation integration
 
-### 9. Shipping & Fulfillment
+### 9. User & Permission Management
 
-#### Shipping Method Configuration
-
-- Carrier integration
-- Zone-based rates
-- Weight/price-based rates
-- Free shipping rules
-- Dimensional weight support
-- Handling fee configuration
-
-#### Fulfillment Management
-
-- Order picking lists
-- Packing slip generation
-- Shipping label generation
-- Batch order processing
-- Partial shipment handling
-- Shipping status tracking
-
-#### Return Management
-
-- Return authorization process
-- Return reason tracking
-- Return shipping label generation
-- Refund processing workflow
-- Return inventory management
-- Exchange processing
-
-### 10. System Configuration & Settings
-
-#### Store Configuration
-
-- General settings
-- Currency configuration
-- Locale settings
-- Date and time format
-- Measurement units
-- Contact information
-- Legal information
-
-#### User & Role Management
-
-- Admin user creation
-- Role definition
-- Permission assignment
-- Activity logging
-- Two-factor authentication
-- Password policy management
-
-#### Integration Management
-
-- Third-party service configuration
-- API key management
-- Webhook configuration
-- Data synchronization settings
-- Error monitoring
-- Connection status dashboard
-
-## UI/UX Design Principles
-
-### Layout & Navigation
-
-1. **Hierarchical Navigation**:
-
-   - Sidebar for main module navigation
-   - Secondary navigation within modules
-   - Breadcrumbs for deep navigation
-   - Recent items quick access
-
-2. **Workspace Optimization**:
-
-   - Collapsible panels for maximizing work area
-   - Split views for related information
-   - Persistent action buttons
-   - Keyboard shortcuts for power users
-   - Table column customization
-
-3. **Responsive Design**:
-   - Desktop-optimized interface
-   - Tablet-friendly layouts with minimal adjustment
-   - Critical functions accessible on mobile
-
-### Interaction Patterns
-
-1. **Data Handling**:
-
-   - Inline editing for quick changes
-   - Bulk actions for efficiency
-   - Drag-and-drop for ordering
-   - Contextual action menus
-   - Advanced filtering and search
-
-2. **Feedback & Notifications**:
-
-   - Toast notifications for actions
-   - Progress indicators for operations
-   - Validation feedback
-   - Confirmation dialogs for critical actions
-   - Status indicators for processes
-
-3. **Accessibility**:
-   - Keyboard navigation support
-   - Screen reader compatibility
-   - Sufficient color contrast
-   - Focus indicators
-   - Semantic HTML structure
-
-## Technical Implementation
-
-### State Management
-
-- Global app state managed with Context API + useReducer
-- React Query for server state and data fetching
-- Form state management with React Hook Form
-- UI state handled with local component state
-- Persistent storage for settings and preferences
-
-### API Communication
-
-- RESTful API integration with all server endpoints
-- Request interceptors for authentication
-- Response interceptors for error handling
-- Caching strategies for performance
-- Retry mechanisms for transient failures
-- Optimistic UI updates for responsive interactions
-
-### Performance Optimization
-
-- Virtualized lists for large datasets
-- Pagination for data tables
-- Lazy loading for non-critical components
-- Image optimization
-- Code splitting by module
-- Memoization for expensive calculations
-
-### Security Measures
+#### Admin User Management
 
 - Role-based access control
-- CSRF protection
-- Input sanitization
-- Secure authentication flows
-- Session timeout management
-- Audit logging for sensitive operations
+- Permission configuration
+- User creation and management
+- Activity logging
+- Password policies
+- Two-factor authentication
+- Session management
 
-## Development Roadmap
+#### Role Configuration
 
-### Phase 1: Core Framework & Authentication
+- Role creation
+- Granular permission assignment
+- Permission inheritance
+- Module-specific permissions
+- Action-level permissions
+- Custom role templates
 
-- Admin layout and navigation
-- Authentication system
-- User and role management
-- Basic dashboard with placeholder widgets
+## Implementation Approach
 
-### Phase 2: Product & Order Management
+### UI/UX Design System
 
-- Product catalog CRUD operations
+The admin CRM will utilize a consistent design system with these components:
+
+1. **Layout Elements**
+
+   - Responsive admin layout with collapsible sidebar
+   - Top navigation with quick actions
+   - Breadcrumb navigation
+   - Page containers with consistent spacing
+   - Card components for content grouping
+   - Tabs and accordions for content organization
+
+2. **Data Display Components**
+
+   - Data tables with sorting, filtering, and pagination
+   - Detail panels with organized information
+   - Status indicators and badges
+   - Timeline components for activity history
+   - Stat cards and KPI displays
+   - Chart components for data visualization
+
+3. **Form Components**
+
+   - Input fields with validation
+   - Select dropdowns with search
+   - Multi-select components
+   - Date and time pickers
+   - File uploaders
+   - Rich text editors
+   - Toggle switches and checkboxes
+   - Stepper components for multi-step forms
+
+4. **Interactive Elements**
+   - Contextual menus
+   - Modal dialogs
+   - Slide-over panels
+   - Tooltips and popovers
+   - Notification toasts
+   - Action buttons with confirmation
+   - Drag-and-drop interfaces
+
+### Technical Architecture
+
+#### Project Structure
+
+```
+admin/
+├── src/
+│   ├── components/
+│   │   ├── common/           # Shared UI components
+│   │   ├── layout/           # Layout components
+│   │   ├── forms/            # Form components
+│   │   ├── tables/           # Table components
+│   │   ├── charts/           # Chart components
+│   │   └── modules/          # Module-specific components
+│   ├── pages/                # Route components
+│   ├── routes/               # Route definitions
+│   ├── hooks/                # Custom React hooks
+│   ├── context/              # Context providers
+│   ├── services/             # API services
+│   ├── utils/                # Utility functions
+│   ├── animations/           # anime.js animations
+│   ├── constants/            # Application constants
+│   ├── types/                # TypeScript types
+│   └── assets/               # Static assets
+├── index.html                # Entry HTML file
+├── vite.config.js            # Vite configuration
+├── tailwind.config.js        # Tailwind configuration
+└── tsconfig.json             # TypeScript configuration
+```
+
+#### State Management
+
+1. **Global State**
+
+   - Authentication state
+   - User permissions
+   - UI preferences (theme, sidebar state)
+   - Global notifications
+   - System settings
+
+2. **Server State**
+
+   - React Query for API data
+   - Optimistic updates
+   - Query invalidation strategy
+   - Prefetching and pagination
+   - Background refetching
+
+3. **Form State**
+   - React Hook Form for form management
+   - Zod schema validation
+   - Form submission handling
+   - Error management
+   - Field dependency handling
+
+#### API Integration
+
+1. **Service Layer**
+
+   - Modular API services by domain (OrderService, ProductService, etc.)
+   - Axios interceptors for authentication
+   - Request/response transformation
+   - Error handling
+   - Retry logic
+
+2. **Data Fetching Strategy**
+
+   - Query key structure
+   - Caching configuration
+   - Loading and error states
+   - Pagination handling
+   - Filtering and sorting
+
+#### Authentication & Authorization
+
+1. **Authentication Flow**
+
+   - Login with credentials
+   - JWT storage and renewal
+   - Session management
+   - Logout handling
+   - Remember me functionality
+
+2. **Authorization System**
+   - Permission checking
+   - Role-based UI adaptation
+   - Protected routes
+   - Feature-level access control
+   - Action-level permissions
+
+### Animation Strategy
+
+The admin CRM will use anime.js for animations with a focus on:
+
+1. **Functional Animations**
+
+   - Loading states and indicators
+   - Transition between views
+   - Form feedback and validation
+   - Data updates and changes
+   - Alert and notification displays
+
+2. **Performance Considerations**
+
+   - Minimal animations for business-focused interface
+   - GPU acceleration for complex animations
+   - Reduced motion support
+   - Animation throttling
+   - Frame rate optimization
+
+3. **Implementation Patterns**
+   - Reusable animation hooks
+   - Component-specific animations
+   - Animation coordination
+   - Entrance and exit animations
+   - Interactive feedback animations
+
+### Development Workflow
+
+1. **Environment Setup**
+
+   - Development server configuration
+   - Mock API integration
+   - Environment variable management
+   - Hot module replacement
+   - Development tools and extensions
+
+2. **Component Development**
+
+   - Component-first approach
+   - Composition patterns
+   - Prop documentation
+   - Reusable hooks
+   - Consistent styling patterns
+
+3. **Testing Strategy**
+
+   - Component testing with Vitest and React Testing Library
+   - Form validation testing
+   - API integration testing
+   - Authorization testing
+   - End-to-end testing of critical workflows
+
+### Build & Deployment
+
+1. **Build Process**
+
+   - Optimized production builds
+   - Code splitting strategy
+   - Static asset optimization
+   - Environment configuration
+   - Bundle analysis
+
+2. **Deployment Strategy**
+
+   - Static hosting options
+   - CDN integration
+   - Cache configuration
+   - Environment-specific deployments
+   - Blue-green deployments for zero downtime
+
+3. **Continuous Integration**
+   - Automated testing
+   - Linting and type checking
+   - Build verification
+   - Deployment automation
+   - Version management
+
+## Module Implementation Details
+
+### Dashboard Implementation
+
+1. **KPI Widgets**
+
+   - Modular widget system
+   - Data refresh strategy
+   - Configurable time periods
+   - Drill-down capabilities
+   - Export options
+
+2. **Chart Components**
+
+   - Responsive chart designs
+   - Interactive data points
+   - Configurable visualizations
+   - CSV/Excel export
+   - Print-friendly views
+
+3. **Quick Actions**
+   - Context-aware action suggestions
+   - Recent items access
+   - Notification-driven actions
+   - Personalized action prioritization
+
+### Order Management Implementation
+
+1. **Order List View**
+
+   - Advanced filtering and search
+   - Batch operations
+   - Customizable columns
+   - Quick edit capabilities
+   - Export functionality
+
+2. **Order Detail View**
+
+   - Comprehensive order information
+   - Status update workflow
+   - Timeline visualization
+   - Customer communication tools
+   - Related order connections
+
+3. **Order Processing Actions**
+   - Payment capture/refund
+   - Shipping label generation
+   - Invoice creation
+   - Order status management
+   - Customer notification tools
+
+### Product Management Implementation
+
+1. **Product Catalog View**
+
+   - Grid and list view options
+   - Quick edit capabilities
+   - Batch operations
+   - Advanced filtering
+   - Category-based organization
+
+2. **Product Editor**
+
+   - Multi-tab form organization
+   - Variant management interface
+   - Media management with preview
+   - SEO tools and preview
+   - Related product selection
+   - Pricing and inventory management
+
+3. **Attribute Management**
+   - Attribute type configuration
+   - Option value management
+   - Attribute set creation
+   - Category attribution
+   - Validation rules
+
+### Customer Management Implementation
+
+1. **Customer Directory**
+
+   - Advanced search and filtering
+   - Customer segmentation tools
+   - Activity monitoring
+   - Export capabilities
+   - Batch operations
+
+2. **Customer Profile**
+
+   - Comprehensive customer information
+   - Order history with quick access
+   - Communication timeline
+   - Notes and tags
+   - Customer value metrics
+
+3. **Customer Group Management**
+   - Group creation and configuration
+   - Permission assignment
+   - Pricing rule application
+   - Communication targeting
+   - Promotion eligibility
+
+### Marketing Tools Implementation
+
+1. **Campaign Manager**
+
+   - Campaign creation workflow
+   - Scheduling interface
+   - Target audience selection
+   - Performance tracking dashboard
+   - A/B testing configuration
+
+2. **Promotion Engine**
+
+   - Rule condition builder
+   - Discount action configuration
+   - Coupon code management
+   - Preview and testing tools
+   - Performance analytics
+
+3. **Content Scheduling**
+   - Calendar interface
+   - Content preview
+   - Publication workflow
+   - Approval process
+   - Channel distribution
+
+### Inventory Management Implementation
+
+1. **Stock Management Interface**
+
+   - Real-time inventory levels
+   - Adjustment workflow
+   - History and audit trail
+   - Low stock notifications
+   - Reorder recommendations
+
+2. **Warehouse Management**
+
+   - Multi-location inventory
+   - Transfer management
+   - Allocation rules
+   - Picking and packing
+   - Shipping integration
+
+3. **Supplier Management**
+   - Supplier directory
+   - Order management
+   - Performance tracking
+   - Cost tracking
+   - Inventory forecasting
+
+### Reporting & Analytics Implementation
+
+1. **Report Builder**
+
+   - Customizable report templates
+   - Parameter selection
+   - Visualization options
+   - Scheduling and distribution
+   - Export formats
+
+2. **Analytics Dashboards**
+
+   - Business intelligence widgets
+   - Interactive filtering
+   - Trend analysis
+   - Comparative reporting
+   - Forecast projections
+
+3. **Export & Integration**
+   - Excel/CSV export
+   - PDF generation
+   - API access to reports
+   - Integration with external analytics
+   - Data warehouse connections
+
+## Performance Optimization
+
+1. **Initial Load Performance**
+
+   - Code splitting by module
+   - Lazy loading of non-critical components
+   - Asset optimization
+   - Caching strategy
+   - Prefetching for common workflows
+
+2. **Runtime Performance**
+
+   - Virtualized lists for large datasets
+   - Pagination for data tables
+   - Memoization for expensive calculations
+   - Debounced search inputs
+   - Optimized re-renders
+
+3. **Background Processing**
+   - Offline capabilities for critical actions
+   - Background synchronization
+   - Batch processing for bulk operations
+   - Progressive loading for large datasets
+   - Worker offloading for intensive operations
+
+## Security Considerations
+
+1. **Authentication Security**
+
+   - Strong password policies
+   - Multi-factor authentication
+   - Session timeout controls
+   - IP-based restrictions
+   - Failed attempt lockouts
+
+2. **Data Protection**
+
+   - Role-based access control
+   - Field-level permissions
+   - Sensitive data masking
+   - Audit logging
+   - Data export controls
+
+3. **System Security**
+   - CSRF protection
+   - XSS prevention
+   - Input validation and sanitation
+   - API rate limiting
+   - Security headers
+
+## Implementation Timeline
+
+### Phase 1: Core Framework (Weeks 1-2)
+
+- Project setup and configuration
+- Authentication and authorization system
+- Core UI components
+- Navigation and routing
+- API service layer
+
+### Phase 2: Essential Modules (Weeks 3-5)
+
+- Dashboard implementation
+- Order management
+- Basic product management
+- Customer directory
+- User management
+
+### Phase 3: Advanced Modules (Weeks 6-9)
+
+- Advanced product management
 - Inventory management
-- Order listing and processing
-- Basic reporting
+- Marketing and promotions
+- Content management
+- Payment and tax configuration
 
-### Phase 3: Customer & Marketing
+### Phase 4: Analytics & Reporting (Weeks 10-11)
 
-- Customer management
-- Basic CMS functionality
-- Promotion and discount management
-- Email template system
+- Reporting framework
+- Analytics dashboards
+- Export capabilities
+- Data visualization
+- Performance metrics
 
-### Phase 4: Advanced Features
+### Phase 5: Integration & Refinement (Weeks 12-13)
 
-- Advanced analytics and reporting
-- Multi-warehouse inventory
-- Loyalty program management
-- Advanced content management
-- Customizable dashboard
-
-### Phase 5: Integration & Optimization
-
-- Third-party service integrations
+- System integration testing
 - Performance optimization
-- Advanced security features
-- Comprehensive testing
-- Documentation and training materials
-
-## Integration Points
-
-### External Services
-
-- Payment gateways
-- Shipping carriers
-- Email marketing platforms
-- Analytics services
-- Tax calculation services
-- Social media platforms
-
-### Internal Systems
-
-- Customer-facing storefront
-- Mobile applications
-- Warehouse management systems
-- Accounting software
-- CRM systems
-- Support ticketing systems
-
-## Testing Strategy
-
-1. **Unit Testing**:
-
-   - Component testing
-   - Service and utility function testing
-   - State management testing
-
-2. **Integration Testing**:
-
-   - API interaction testing
-   - Cross-module functionality testing
-   - Form submission flows
-
-3. **End-to-End Testing**:
-
-   - Critical admin workflows
-   - Order processing flow
-   - Product creation flow
-   - Customer management flow
-
-4. **Performance Testing**:
-   - Load time benchmarking
-   - Large dataset handling
-   - Concurrent operation testing
+- Security hardening
+- User acceptance testing
+- Documentation
 
 ## Conclusion
 

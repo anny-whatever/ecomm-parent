@@ -4,6 +4,19 @@
 
 This document outlines the detailed implementation plan for the customer-facing storefront of our e-commerce platform. The storefront will provide a seamless, engaging, and conversion-optimized shopping experience across all devices while integrating with all the backend functionality.
 
+## Technology Stack
+
+- **Framework**: React 18+ with Vite
+- **State Management**: React Context API + useReducer for global state
+- **Server State**: React Query for data fetching and caching
+- **Styling**: Tailwind CSS 3+ with custom theme
+- **Routing**: React Router for navigation
+- **Forms**: React Hook Form with Zod validation
+- **Animations**: anime.js for UI interactions and transitions
+- **API Communication**: Axios with custom interceptors
+- **Authentication**: JWT-based authentication with secure cookies
+- **SEO**: Client-side SEO optimization with meta tags and structured data
+
 ## Core User Experience Principles
 
 1. **Performance-First Approach**
@@ -248,6 +261,7 @@ This document outlines the detailed implementation plan for the customer-facing 
 - Shipping and returns policy
 - Privacy policy and terms
 - Blog/editorial content
+- Store locator (if applicable)
 - Size guides
 - Product care information
 - Sustainability information
@@ -256,749 +270,549 @@ This document outlines the detailed implementation plan for the customer-facing 
 
 - Email signup with incentive
 - Social media integration
+- Promotional banners and overlays
+- Featured collections
+- Limited-time offers
+- Seasonal campaigns
+- Influencer collaborations
 - User-generated content showcase
-- Brand story elements
-- Campaign landing pages
-- Seasonal promotions
-- New collection announcements
 
-### 8. Reviews & Social Proof
+## Implementation Approach
 
-#### Review System
+### Project Setup
 
-- Product review submission
-- Star rating system
-- Media upload with reviews
-- Review moderation
-- Verified purchaser badges
-- Review helpfulness voting
-- Review filtering and sorting
-- Review search functionality
-- Q&A functionality
+1. **Development Environment**
 
-#### Social Proof Elements
+   - Vite configuration
+   - TypeScript setup
+   - Tailwind CSS integration
+   - Development server configuration
+   - Hot module replacement
 
-- Real-time purchase notifications
-- "X people are viewing this" indicators
-- Customer photos/videos
-- Social media testimonials
-- Bestseller badging
-- "As featured in" media mentions
-- Trust badges and certifications
+2. **Project Structure**
 
-### 9. Localization & Multi-currency
+   - Feature-based organization
+   - Shared components
+   - Routing setup with React Router
+   - Global state management
+   - API service layer
 
-#### Localization
+3. **Base Components**
+   - Design system foundation
+   - Typography components
+   - Layout primitives
+   - Form elements
+   - Button variations
+   - Card components
+   - Modal/dialog system
 
-- Language selection
-- Region-specific content
-- Localized pricing
-- Localized product availability
-- Date and time format adaptation
-- Address format localization
-- Measurement unit conversion
+### Routing & Navigation Implementation
 
-#### Multi-currency
+1. **Route Configuration**
 
-- Currency selection
-- Real-time currency conversion
-- Base price display with converted price
-- Currency persistence across sessions
-- Localized tax handling
-- Payment method availability by region
-
-### 10. Mobile App Features
-
-#### Mobile-specific Features
-
-- Push notifications for orders and promotions
-- Barcode/QR code scanner
-- Touch ID/Face ID authentication
-- Offline browsing capability
-- App-exclusive offers
-- Location-based services
-- Mobile wallet integration
-- Image recognition search
-
-## Technical Implementation
-
-### Frontend Architecture
-
-#### Framework & Core Technologies
-
-- Next.js for server-side rendering and static generation
-- React for component-based UI
-- TypeScript for type safety
-- Tailwind CSS for styling
-- React Query for data fetching and server state
-- Context API + useReducer for client state management
-- Framer Motion for animations
-- Axios for API requests
-
-#### Performance Strategies
-
-- Image optimization with Next.js Image component
-- Code splitting and lazy loading
-- Static generation for non-dynamic pages
-- Incremental Static Regeneration for semi-dynamic content
-- Client-side data fetching for user-specific content
-- Service worker for caching and offline support
-- Critical CSS extraction
-- Efficient bundle size management
-
-#### State Management
-
-- Context API with useReducer for global client state:
-  - User authentication and preferences
-  - Shopping cart
-  - UI theme and settings
-  - Form wizard state
-- React Query for all server data:
-  - Products and catalog
-  - User profile data
-  - Orders and history
-  - Cached API responses
-- Local component state for UI interactions
-- Persistent storage for offline and cross-session state
-
-### Integration Points
-
-#### Backend API Integration
-
-- RESTful API endpoints for all data needs
-- Authentication and session management
-- Real-time inventory checking
-- Order processing
-- User data management
-- Content retrieval
-- Search functionality
-- Review submission and retrieval
-
-#### Third-party Integrations
-
-- Payment gateways (Razorpay, etc.)
-- Social login providers
-- Customer reviews platforms
-- Email marketing services
-- Social media sharing
-- Analytics tools
-- A/B testing platforms
-- Chat and support services
-
-#### Progressive Web App Features
-
-- Installable on home screen
-- Offline functionality
-- Push notifications
-- Background sync for orders
-- App-like experience
-- Smooth transitions and animations
-
-## User Interface Components
-
-### Reusable UI Components
-
-1. **Layout Components**
-
-   - Page container
-   - Grid system
-   - Section containers
-   - Responsive wrappers
-   - Header variations
-   - Footer variations
-   - Sidebar
+   - React Router setup
+   - Route definitions
+   - Nested routes
+   - Dynamic routes
+   - Route guards
+   - Not found handling
 
 2. **Navigation Components**
 
-   - Main navigation
-   - Mega menu
+   - Header implementation
+   - Footer implementation
    - Mobile navigation drawer
-   - Breadcrumbs
-   - Pagination
-   - Tab navigation
-   - Stepper for multi-step processes
+   - Breadcrumb system
+   - Category mega menu
+   - User account menu
 
-3. **Content Display**
+3. **Scroll Management**
+   - Scroll restoration between routes
+   - Smooth scrolling
+   - Scroll to top functionality
+   - Anchor link navigation
+   - Scroll position memory
 
-   - Product cards
+### State Management Implementation
+
+1. **Global State**
+
+   - Auth context
+   - Cart context
+   - Wishlist context
+   - User preferences context
+   - Notification context
+
+2. **Local State**
+
+   - Component-level state
+   - Form state
+   - UI interaction state
+   - Animation state
+
+3. **Server State**
+   - React Query setup
+   - Query invalidation strategy
+   - Query prefetching
+   - Optimistic updates
+   - Error handling
+
+### API Integration
+
+1. **Service Layer**
+
+   - Base API client
+   - Service modules by domain
+   - Error handling
+   - Response transformation
+   - Request/response typing
+
+2. **Authentication Flow**
+
+   - Login/logout functionality
+   - Token management
+   - Session persistence
+   - Protected route logic
+   - Auth state synchronization
+
+3. **Real-time Functionality**
+   - Cart synchronization
+   - Inventory updates
+   - Price updates
+   - Notification system
+
+### Animation System
+
+1. **Animation Utilities**
+
+   - anime.js integration
+   - Reusable animation presets
+   - Animation timing system
+   - Easing functions
+   - Responsive animations
+
+2. **Interactive Elements**
+
+   - Button hover/active states
+   - Form input focus states
+   - Menu transitions
+   - Accordions and dropdowns
+   - Modal enter/exit animations
+
+3. **Page Transitions**
+   - Route change animations
+   - View transitions
+   - Content fade-in
+   - Staggered element animations
+   - Loading state animations
+
+### Product Catalog Implementation
+
+1. **Category Pages**
+
+   - Category header
    - Product grid/list views
-   - Image gallery
-   - Carousel/slider
-   - Accordion
-   - Tabs
-   - Modal dialogs
-   - Tooltips
+   - Filtering system
+   - Sorting options
+   - Product cards
+   - Pagination/infinite scroll
 
-4. **User Input**
+2. **Product Detail Pages**
 
-   - Form inputs with validation
-   - Checkboxes and radio buttons
-   - Select dropdowns
-   - Date pickers
-   - Quantity selectors
-   - Range sliders
-   - Search input
-   - Filter controls
+   - Image gallery with zoom
+   - Variant selection
+   - Product information
+   - Add to cart functionality
+   - Recommendations
+   - Reviews and ratings
 
-5. **Feedback & Status**
+3. **Search Functionality**
+   - Search input with suggestions
+   - Search results page
+   - Filtering and sorting
+   - No results handling
+   - Search history
 
-   - Loading indicators
-   - Toast notifications
-   - Alert messages
-   - Progress bars
-   - Success/error states
-   - Empty states
-   - Skeleton loaders
+### Shopping Cart Implementation
 
-6. **E-commerce Specific**
-   - Price display
-   - Sale badge
-   - Stock status indicator
-   - Rating stars
-   - Add to cart button
-   - Wishlist button
-   - Color/size selectors
-   - Product comparison
+1. **Cart Components**
 
-### Theme System
+   - Cart preview/mini cart
+   - Full cart page
+   - Line item components
+   - Quantity adjusters
+   - Price summary
+   - Promotional code input
 
-- Customizable color palette
-- Typography system
-- Spacing scale
-- Breakpoint system
-- Component variants
-- Dark mode support
-- Multiple theme configurations
-- Accessibility considerations
+2. **Cart Logic**
 
-## Cross-cutting Concerns
+   - Add to cart functionality
+   - Update quantity
+   - Remove items
+   - Cart persistence
+   - Cart merging (guest to logged-in)
+   - Price calculation
 
-### Accessibility
+3. **Checkout Flow**
+   - Checkout form
+   - Address management
+   - Shipping method selection
+   - Payment method integration
+   - Order review
+   - Order confirmation
 
-- WCAG 2.1 AA compliance
-- Semantic HTML structure
-- ARIA attributes
-- Keyboard navigation
-- Screen reader optimization
-- Sufficient color contrast
-- Focus management
-- Skip navigation links
-- Alternative text for images
-- Accessible forms with clear validation
+### User Account Implementation
 
-### Analytics & Tracking
+1. **Authentication UI**
 
-- Page view tracking
-- Enhanced e-commerce tracking
-- User journey analysis
-- Conversion funnel monitoring
-- Search term tracking
-- Add to cart events
-- Wishlist events
-- Checkout step tracking
-- Order completion tracking
-- User segment analysis
+   - Login form
+   - Registration form
+   - Password reset
+   - Social login integration
+   - Form validation
+
+2. **Account Dashboard**
+
+   - Order history
+   - Account settings
+   - Address book
+   - Payment methods
+   - Wishlist management
+   - Review management
+
+3. **Personalization**
+   - Saved preferences
+   - Recently viewed
+   - Favorite products
+   - Custom lists
+   - Notification settings
+
+## Technical Considerations
+
+### Performance Optimization
+
+1. **Initial Load Performance**
+
+   - Code splitting by route
+   - Lazy loading of non-critical components
+   - Critical CSS extraction
+   - Asset optimization (images, fonts)
+   - Caching strategy
+
+2. **Runtime Performance**
+
+   - Component memoization
+   - Virtualized lists for long content
+   - Debounced inputs
+   - Throttled scroll handlers
+   - Optimized re-renders
+
+3. **Perceived Performance**
+   - Skeleton screens during loading
+   - Progressive image loading
+   - Optimistic UI updates
+   - Predictive prefetching
+   - Background data loading
+
+### SEO Implementation
+
+1. **Metadata Management**
+
+   - Page titles and descriptions
+   - Open Graph tags
+   - Twitter card tags
+   - Canonical URLs
+   - Structured data (JSON-LD)
+
+2. **Content Optimization**
+
+   - Semantic HTML structure
+   - Proper heading hierarchy
+   - Image alt text
+   - Rich content
+   - Internal linking
+
+3. **Technical SEO**
+   - XML sitemap generation
+   - Robots.txt configuration
+   - Search-engine friendly URLs
+   - Proper status codes
+   - Mobile optimization
+
+### Accessibility Implementation
+
+1. **WCAG 2.1 Compliance**
+
+   - Semantic HTML
+   - ARIA attributes
+   - Focus management
+   - Keyboard navigation
+   - Screen reader optimization
+
+2. **UI Considerations**
+
+   - Sufficient color contrast
+   - Text resizing support
+   - Form labeling
+   - Error identification
+   - Skip navigation links
+
+3. **Interactive Elements**
+   - Accessible modals
+   - Accessible dropdowns
+   - Form validation messages
+   - Touch target sizing
+   - Reduced motion option
+
+### Localization & Internationalization
+
+1. **Language Support**
+
+   - i18next integration
+   - Translation file structure
+   - Language detection
+   - Language switching
+   - Fallback handling
+
+2. **Regional Adaptation**
+
+   - Currency formatting
+   - Date and time formatting
+   - Number formatting
+   - Address formatting
+   - Phone number formatting
+
+3. **Content Localization**
+   - Translatable content
+   - Image adaptation
+   - Cultural considerations
+   - Right-to-left support (if needed)
+   - Region-specific content
 
 ### Security Measures
 
-- Secure authentication flows
-- CSRF protection
-- Input validation and sanitization
-- Content Security Policy
-- HTTPS enforcement
-- Secure cookie handling
-- Privacy-conscious data collection
-- Compliance with regulations (GDPR, CCPA)
+1. **Data Protection**
 
-### Testing Strategy
+   - Secure API calls
+   - HTTPS enforcement
+   - HTTP-only cookies
+   - Sensitive data handling
+   - Form submission protection
 
-1. **Unit Testing**
+2. **Input Validation**
 
-   - Component testing with React Testing Library
-   - Service and utility function testing
-   - State management testing
+   - Client-side validation
+   - Data sanitization
+   - XSS prevention
+   - CSRF protection
+   - Rate limiting
 
-2. **Integration Testing**
+3. **Authentication Security**
+   - Strong password requirements
+   - Multi-factor authentication (if applicable)
+   - Session management
+   - Account lockout protection
+   - Secure password reset flow
 
-   - Page composition testing
-   - API integration testing
-   - Form submission flows
+## Testing Strategy
 
-3. **End-to-End Testing**
+### Unit Testing
 
-   - Critical user journeys
-   - Checkout flow
+1. **Component Testing**
+
+   - Component rendering
+   - Prop validation
+   - Event handling
+   - State changes
+   - Conditional rendering
+
+2. **Utility Testing**
+
+   - Helper functions
+   - Formatters
+   - Validators
+   - Calculations
+   - Data transformations
+
+3. **Hook Testing**
+   - Custom hooks
+   - Hook behavior
+   - State updates
+   - Side effects
+   - Error handling
+
+### Integration Testing
+
+1. **Feature Testing**
+
+   - User flows
+   - Component interactions
+   - State management
+   - API integration
+   - Route transitions
+
+2. **Form Testing**
+
+   - Form submission
+   - Validation behavior
+   - Error messaging
+   - Field interactions
+   - Submission handling
+
+3. **API Integration Testing**
+   - API responses
+   - Error handling
+   - Loading states
+   - Data transformation
+   - Caching behavior
+
+### End-to-End Testing
+
+1. **Critical Paths**
+
+   - Product browsing and search
+   - Add to cart and checkout
+   - User registration and login
    - Account management
-   - Product discovery flow
+   - Order placement and tracking
 
-4. **Performance Testing**
+2. **Edge Cases**
 
-   - Lighthouse score monitoring
-   - Web Vitals tracking
-   - Load time benchmarking
-   - Bundle size monitoring
+   - Empty states
+   - Error scenarios
+   - Network failures
+   - Session expiration
+   - Validation boundaries
 
-5. **Cross-browser Testing**
-   - Ensure compatibility across major browsers
-   - Mobile browser testing
-   - Responsive design verification
+3. **Cross-browser Testing**
+   - Desktop browsers
+   - Mobile browsers
+   - Tablet views
+   - Different operating systems
+   - Performance variations
 
-## Implementation Phases
+## Monitoring & Analytics
 
-### Phase 1: Core Shopping Experience
+### Performance Monitoring
 
-- Homepage design and layout
-- Basic navigation structure
-- Product listing pages
+1. **Web Vitals Tracking**
+
+   - Largest Contentful Paint (LCP)
+   - First Input Delay (FID)
+   - Cumulative Layout Shift (CLS)
+   - First Contentful Paint (FCP)
+   - Time to Interactive (TTI)
+
+2. **Error Tracking**
+
+   - JavaScript error logging
+   - API error monitoring
+   - Performance bottlenecks
+   - Resource loading failures
+   - User-reported issues
+
+3. **Real User Monitoring**
+   - Page load times
+   - Navigation timing
+   - Resource timing
+   - User interactions
+   - Geographic performance variations
+
+### Business Analytics
+
+1. **E-commerce Metrics**
+
+   - Conversion rate
+   - Average order value
+   - Cart abandonment rate
+   - Product performance
+   - Revenue tracking
+   - Return rate
+
+2. **User Behavior**
+
+   - Session duration
+   - Pages per session
+   - Bounce rate
+   - Entry and exit pages
+   - User flow analysis
+   - Scroll depth
+
+3. **Campaign Tracking**
+   - UTM parameter tracking
+   - Promotional effectiveness
+   - Referral source analysis
+   - Email campaign performance
+   - Social media impact
+
+## Deployment Strategy
+
+1. **Environment Configuration**
+
+   - Development environment
+   - Staging environment
+   - Production environment
+   - Environment-specific variables
+   - Feature flags
+
+2. **Build Optimization**
+
+   - Bundle size optimization
+   - Tree shaking
+   - Dead code elimination
+   - Asset compression
+   - Code minification
+
+3. **Deployment Pipeline**
+   - Continuous integration
+   - Automated testing
+   - Build artifacts
+   - Deployment automation
+   - Rollback capability
+
+## Implementation Timeline
+
+### Phase 1: Foundation (Weeks 1-2)
+
+- Project setup and configuration
+- Component library foundation
+- API service layer
+- Authentication system
+- Routing implementation
+- Global state management
+
+### Phase 2: Core Features (Weeks 3-5)
+
+- Homepage implementation
+- Category browsing
 - Product detail pages
-- Basic cart functionality
-- Simple checkout process
-- User account creation and login
+- Search functionality
+- Shopping cart basics
+- User account foundation
 
-### Phase 2: Enhanced Shopping Features
+### Phase 3: Extended Features (Weeks 6-8)
 
-- Advanced search and filtering
+- Checkout process
+- Payment integration
+- Wishlists
 - Reviews and ratings
-- Wishlist functionality
-- Enhanced product pages with more information
-- Improved checkout with multiple options
-- Order tracking capability
-- Account management improvements
+- Account dashboard
+- Content pages
 
-### Phase 3: Personalization & Optimization
+### Phase 4: Enhancement & Optimization (Weeks 9-10)
 
-- Personalized recommendations
-- Recently viewed products
-- Saved preferences
-- Enhanced mobile experience
-- Performance optimizations
-- A/B testing infrastructure
-- Conversion optimization features
-
-### Phase 4: Advanced Features
-
-- Multi-language support
-- Multi-currency support
-- Advanced content pages
-- Loyalty program integration
-- PWA capabilities
-- Advanced analytics integration
-- Social sharing and UGC
-
-### Phase 5: Continuous Improvement
-
-- User feedback collection and analysis
-- Conversion rate optimization
-- Performance monitoring and improvement
-- Feature enhancement based on analytics
-- A/B testing of new features
+- Performance optimization
+- SEO implementation
 - Accessibility improvements
-
-## Conclusion
-
-This comprehensive storefront implementation plan covers all aspects of the customer-facing e-commerce experience. By focusing on performance, usability, and conversion optimization, we will create a compelling shopping experience that differentiates our platform in the marketplace.
-
-The phased approach allows for iterative development and testing, ensuring that core functionality is prioritized while providing a clear roadmap for enhanced features. The focus on reusable components and modular architecture will facilitate efficient development and future extensibility.
-
-### UI/UX Enhancement Features
-
-- **Responsive Design**: Fully responsive layout across all devices
-- **Dark/Light Mode**: Theme switching capabilities
-- **Accessibility**: WCAG 2.1 AA compliance
-- **Loading States**: Skeleton loaders and progress indicators
-- **Error Handling**: User-friendly error messages
-- **Micro-interactions**: Subtle animations for feedback
-- **Optimistic UI Updates**: Immediate interface response before server confirmation
-- **Offline Support**: Basic functionality when connection is lost
-- **Touch Gestures**: Swipe and pinch support for mobile users
-- **Visual Feedback**: Clear indication of system status
-
-## Optimistic UI Implementation
-
-### Cart Operations with Optimistic Updates
-
-To create a responsive and fluid shopping experience, we'll implement optimistic UI updates for cart operations:
-
-#### Add to Cart Flow
-
-1. User clicks "Add to Cart" button
-2. UI immediately updates cart icon counter and shows success toast
-3. Background API call adds item to cart on server
-4. If API call fails:
-   - Revert cart counter
-   - Show error notification
-   - Offer retry option
-
-#### Cart Item Quantity Updates
-
-1. User adjusts quantity via +/- buttons or input field
-2. UI immediately updates:
-   - Item quantity
-   - Item subtotal
-   - Cart subtotal, taxes, and total
-3. Background API call updates quantity on server
-4. If API call fails:
-   - Revert to previous quantity and calculations
-   - Show error notification
-   - Retry automatically or prompt user
-
-#### Remove Item From Cart
-
-1. User clicks remove button
-2. Item instantly fades out and removes from view
-3. Cart totals update immediately
-4. Background API call removes item on server
-5. If API call fails:
-   - Return item to cart
-   - Show error notification
-
-#### Apply Coupon Code
-
-1. User enters and submits coupon code
-2. UI shows "Checking..." with spinner
-3. On success:
-   - Instantly show discount applied
-   - Update all totals
-   - Show success message
-4. On failure:
-   - Show specific error (invalid, expired, etc.)
-
-#### Cart Context Implementation
-
-```tsx
-import { createContext, useContext, useReducer, useCallback } from "react";
-import { cartService } from "../services/cart.service";
-import { showNotification } from "../utils/notifications";
-
-// Define types
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-};
-
-type CartState = {
-  items: CartItem[];
-  totals: {
-    subtotal: number;
-    quantity: number;
-    tax?: number;
-    shipping?: number;
-    discount?: number;
-    total?: number;
-  };
-  isLoading: boolean;
-  originalState: null | {
-    items: CartItem[];
-    totals: CartState["totals"];
-  };
-};
-
-type CartAction =
-  | { type: "SET_CART"; payload: Partial<CartState> }
-  | { type: "ADD_ITEM"; payload: CartItem }
-  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "REMOVE_ITEM"; payload: { id: string } }
-  | { type: "CAPTURE_STATE" }
-  | { type: "RESTORE_STATE" }
-  | { type: "SET_LOADING"; payload: boolean };
-
-// Create reducer
-const cartReducer = (state: CartState, action: CartAction): CartState => {
-  switch (action.type) {
-    case "SET_CART":
-      return { ...state, ...action.payload };
-
-    case "ADD_ITEM": {
-      const existingItemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
-      );
-
-      if (existingItemIndex >= 0) {
-        // Update existing item
-        const updatedItems = [...state.items];
-        const item = updatedItems[existingItemIndex];
-        updatedItems[existingItemIndex] = {
-          ...item,
-          quantity: item.quantity + action.payload.quantity,
-        };
-
-        return {
-          ...state,
-          items: updatedItems,
-          totals: {
-            ...state.totals,
-            subtotal:
-              state.totals.subtotal +
-              action.payload.price * action.payload.quantity,
-            quantity: state.totals.quantity + action.payload.quantity,
-          },
-        };
-      } else {
-        // Add new item
-        return {
-          ...state,
-          items: [...state.items, action.payload],
-          totals: {
-            ...state.totals,
-            subtotal:
-              state.totals.subtotal +
-              action.payload.price * action.payload.quantity,
-            quantity: state.totals.quantity + action.payload.quantity,
-          },
-        };
-      }
-    }
-
-    case "UPDATE_QUANTITY": {
-      const itemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
-      );
-
-      if (itemIndex === -1) return state;
-
-      const item = state.items[itemIndex];
-      const quantityDiff = action.payload.quantity - item.quantity;
-
-      const updatedItems = [...state.items];
-      updatedItems[itemIndex] = {
-        ...item,
-        quantity: action.payload.quantity,
-      };
-
-      return {
-        ...state,
-        items: updatedItems,
-        totals: {
-          ...state.totals,
-          subtotal: state.totals.subtotal + item.price * quantityDiff,
-          quantity: state.totals.quantity + quantityDiff,
-        },
-      };
-    }
-
-    case "REMOVE_ITEM": {
-      const itemIndex = state.items.findIndex(
-        (item) => item.id === action.payload.id
-      );
-
-      if (itemIndex === -1) return state;
-
-      const item = state.items[itemIndex];
-
-      return {
-        ...state,
-        items: state.items.filter((i) => i.id !== action.payload.id),
-        totals: {
-          ...state.totals,
-          subtotal: state.totals.subtotal - item.price * item.quantity,
-          quantity: state.totals.quantity - item.quantity,
-        },
-      };
-    }
-
-    case "CAPTURE_STATE":
-      return {
-        ...state,
-        originalState: {
-          items: [...state.items],
-          totals: { ...state.totals },
-        },
-      };
-
-    case "RESTORE_STATE":
-      if (!state.originalState) return state;
-
-      return {
-        ...state,
-        items: state.originalState.items,
-        totals: state.originalState.totals,
-        originalState: null,
-      };
-
-    case "SET_LOADING":
-      return { ...state, isLoading: action.payload };
-
-    default:
-      return state;
-  }
-};
-
-// Initial state
-const initialState: CartState = {
-  items: [],
-  totals: {
-    subtotal: 0,
-    quantity: 0,
-  },
-  isLoading: false,
-  originalState: null,
-};
-
-// Create context
-const CartContext = createContext<
-  | {
-      state: CartState;
-      addToCart: (product: any, quantity: number) => Promise<void>;
-      updateQuantity: (id: string, quantity: number) => Promise<void>;
-      removeItem: (id: string) => Promise<void>;
-      clearCart: () => Promise<void>;
-    }
-  | undefined
->(undefined);
-
-// Create provider
-function CartProvider({ children }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
-
-  const addToCart = useCallback(async (product, quantity) => {
-    // Capture current state for potential rollback
-    dispatch({ type: "CAPTURE_STATE" });
-
-    // Optimistically update cart
-    const cartItem: CartItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity,
-      image: product.images[0],
-    };
-
-    dispatch({ type: "ADD_ITEM", payload: cartItem });
-
-    try {
-      // Make API call in background
-      dispatch({ type: "SET_LOADING", payload: true });
-      await cartService.addItem(product.id, quantity);
-      dispatch({ type: "SET_LOADING", payload: false });
-
-      // Show success notification
-      showNotification(`${product.name} added to cart`);
-    } catch (error) {
-      // Restore original state on error
-      dispatch({ type: "RESTORE_STATE" });
-      dispatch({ type: "SET_LOADING", payload: false });
-
-      // Show error notification
-      showNotification(
-        "Failed to add item to cart. Please try again.",
-        "error"
-      );
-    }
-  }, []);
-
-  const updateQuantity = useCallback(async (id, quantity) => {
-    // Capture current state for potential rollback
-    dispatch({ type: "CAPTURE_STATE" });
-
-    // Optimistically update cart
-    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
-
-    try {
-      // Make API call in background
-      dispatch({ type: "SET_LOADING", payload: true });
-      await cartService.updateQuantity(id, quantity);
-      dispatch({ type: "SET_LOADING", payload: false });
-    } catch (error) {
-      // Restore original state on error
-      dispatch({ type: "RESTORE_STATE" });
-      dispatch({ type: "SET_LOADING", payload: false });
-
-      // Show error notification
-      showNotification("Failed to update quantity. Please try again.", "error");
-    }
-  }, []);
-
-  const removeItem = useCallback(async (id) => {
-    // Capture current state for potential rollback
-    dispatch({ type: "CAPTURE_STATE" });
-
-    // Optimistically update cart
-    dispatch({ type: "REMOVE_ITEM", payload: { id } });
-
-    try {
-      // Make API call in background
-      dispatch({ type: "SET_LOADING", payload: true });
-      await cartService.removeItem(id);
-      dispatch({ type: "SET_LOADING", payload: false });
-    } catch (error) {
-      // Restore original state on error
-      dispatch({ type: "RESTORE_STATE" });
-      dispatch({ type: "SET_LOADING", payload: false });
-
-      // Show error notification
-      showNotification("Failed to remove item. Please try again.", "error");
-    }
-  }, []);
-
-  const clearCart = useCallback(async () => {
-    // Capture current state for potential rollback
-    dispatch({ type: "CAPTURE_STATE" });
-
-    // Optimistically update cart
-    dispatch({
-      type: "SET_CART",
-      payload: {
-        items: [],
-        totals: { subtotal: 0, quantity: 0 },
-      },
-    });
-
-    try {
-      // Make API call in background
-      dispatch({ type: "SET_LOADING", payload: true });
-      await cartService.clearCart();
-      dispatch({ type: "SET_LOADING", payload: false });
-    } catch (error) {
-      // Restore original state on error
-      dispatch({ type: "RESTORE_STATE" });
-      dispatch({ type: "SET_LOADING", payload: false });
-
-      // Show error notification
-      showNotification("Failed to clear cart. Please try again.", "error");
-    }
-  }, []);
-
-  return (
-    <CartContext.Provider
-      value={{
-        state,
-        addToCart,
-        updateQuantity,
-        removeItem,
-        clearCart,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
-}
-
-// Custom hook to use cart
-const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
-};
-
-// Usage in components
-function AddToCartButton({ product }) {
-  const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
-
-  return (
-    <button
-      onClick={() => addToCart(product, quantity)}
-      className="btn btn-primary"
-    >
-      Add to Cart
-    </button>
-  );
-}
-```
-
-This implementation uses the useReducer pattern for state management, providing a more structured approach to handle cart operations. By combining this with optimistic UI updates, we create a responsive shopping experience that feels instantaneous to users while still ensuring data consistency with the server.
+- Animation refinement
+- Cross-browser testing
+- Mobile optimization
+
+### Phase 5: Launch Preparation (Weeks 11-12)
+
+- Final integration testing
+- User acceptance testing
+- Analytics implementation
+- Documentation
+- Deployment preparation
+- Launch support
