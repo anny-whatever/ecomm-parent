@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const currencyController = require("./currency.controller");
-const { rbacMiddleware } = require("../../middleware/rbac.middleware");
+const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const currencyValidator = require("../../utils/validators/currency.validator");
 

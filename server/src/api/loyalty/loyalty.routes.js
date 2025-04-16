@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const loyaltyController = require("./loyalty.controller");
+const rbacMiddleware = require("../../middleware/rbac.middleware");
 const { authMiddleware } = require("../../middleware/auth.middleware");
-const { rbacMiddleware } = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const loyaltyValidator = require("../../utils/validators/loyalty.validator");
 

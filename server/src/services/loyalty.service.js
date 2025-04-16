@@ -8,7 +8,7 @@ const { User } = require("../models/user.model");
 const { Order } = require("../models/order.model");
 const { Product } = require("../models/product.model");
 const { generateUniqueCode } = require("../utils/codeGenerator");
-const logger = require("../utils/logger");
+const logger = require("../config/logger");
 const mongoose = require("mongoose");
 const { EventEmitter } = require("../utils/eventEmitter");
 

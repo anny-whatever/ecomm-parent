@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const abandonedCartController = require("./abandoned-cart.controller");
-const { rbacMiddleware } = require("../../middleware/rbac.middleware");
+const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const abandonedCartValidator = require("../../utils/validators/cart.validator");
 

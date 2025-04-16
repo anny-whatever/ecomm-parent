@@ -1623,13 +1623,15 @@ function getCronExpressionForSchedule(schedule) {
   }
 }
 
+// Create an instance of the analytics service
+const analyticsService = new AnalyticsService();
+
 // Add these new functions to the exports
 module.exports = {
-  // Existing exports...
+  // Export the service instance
+  ...analyticsService,
 
-  // New custom report builder functions
+  // Standalone functions
   buildCustomReport,
-  scheduleReport,
-  generateAndSendReport,
   saveCustomReport,
 };

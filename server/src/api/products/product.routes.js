@@ -25,6 +25,13 @@ router.get(
 );
 
 /**
+ * @route   GET /api/v1/products/new-arrivals
+ * @desc    Get new arrivals (recently added products)
+ * @access  Public
+ */
+router.get("/new-arrivals", productController.getNewArrivals);
+
+/**
  * @route   GET /api/v1/products/:idOrSlug
  * @desc    Get product by ID or slug
  * @access  Public

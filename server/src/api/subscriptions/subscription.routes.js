@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const subscriptionController = require("./subscription.controller");
-const { authenticateJWT } = require("../../middleware/auth.middleware");
-const { rbacMiddleware } = require("../../middleware/rbac.middleware");
+const { authMiddleware } = require("../../middleware/auth.middleware");
+const rbacMiddleware = require("../../middleware/rbac.middleware");
 const validationMiddleware = require("../../middleware/validation.middleware");
 const subscriptionValidator = require("../../utils/validators/subscription.validator");
 
@@ -20,7 +20,7 @@ router.get(
 );
 
 // Routes requiring authentication
-router.use(authenticateJWT);
+router.use(authMiddleware);
 
 // User subscription management
 router.post(
@@ -58,7 +58,7 @@ router.post(
 // Admin routes
 const adminRouter = express.Router();
 
-adminRouter.use(authenticateJWT);
+adminRouter.use(authMiddleware);
 adminRouter.use(rbacMiddleware(["admin"]));
 
 // Admin - Plan management

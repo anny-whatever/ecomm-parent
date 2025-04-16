@@ -222,6 +222,38 @@ const deleteProductImage = async (req, res, next) => {
   }
 };
 
+/**
+ * Get new arrivals (recently added products)
+ * @route GET /api/v1/products/new-arrivals
+ * @access Public
+ */
+const getNewArrivals = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const filters = {
+      status: "active",
+    };
+
+    const options = {
+      limit,
+      sortBy: "-createdAt", // Sort by newest first
+    };
+
+    const result = await productService.findProducts(filters, options);
+
+    return res
+      .status(200)
+      .json(
+        responseFormatter(true, "New arrivals retrieved successfully", {
+          products: result.products,
+        })
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -231,4 +263,5 @@ module.exports = {
   getRelatedProducts,
   uploadProductImages,
   deleteProductImage,
+  getNewArrivals,
 };
