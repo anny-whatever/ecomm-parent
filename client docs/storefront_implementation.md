@@ -330,8 +330,8 @@ This document outlines the detailed implementation plan for the customer-facing 
 - React for component-based UI
 - TypeScript for type safety
 - Tailwind CSS for styling
-- SWR or React Query for data fetching
-- Redux Toolkit for complex state management
+- React Query for data fetching and server state
+- Context API + useReducer for client state management
 - Framer Motion for animations
 - Axios for API requests
 
@@ -348,11 +348,18 @@ This document outlines the detailed implementation plan for the customer-facing 
 
 #### State Management
 
-- Local component state for UI state
-- Context API for theme, cart, and user authentication
-- Redux for complex global state
-- Persistent storage for cart and user preferences
-- Real-time synchronization between tabs
+- Context API with useReducer for global client state:
+  - User authentication and preferences
+  - Shopping cart
+  - UI theme and settings
+  - Form wizard state
+- React Query for all server data:
+  - Products and catalog
+  - User profile data
+  - Orders and history
+  - Cached API responses
+- Local component state for UI interactions
+- Persistent storage for offline and cross-session state
 
 ### Integration Points
 
@@ -592,3 +599,406 @@ This document outlines the detailed implementation plan for the customer-facing 
 This comprehensive storefront implementation plan covers all aspects of the customer-facing e-commerce experience. By focusing on performance, usability, and conversion optimization, we will create a compelling shopping experience that differentiates our platform in the marketplace.
 
 The phased approach allows for iterative development and testing, ensuring that core functionality is prioritized while providing a clear roadmap for enhanced features. The focus on reusable components and modular architecture will facilitate efficient development and future extensibility.
+
+### UI/UX Enhancement Features
+
+- **Responsive Design**: Fully responsive layout across all devices
+- **Dark/Light Mode**: Theme switching capabilities
+- **Accessibility**: WCAG 2.1 AA compliance
+- **Loading States**: Skeleton loaders and progress indicators
+- **Error Handling**: User-friendly error messages
+- **Micro-interactions**: Subtle animations for feedback
+- **Optimistic UI Updates**: Immediate interface response before server confirmation
+- **Offline Support**: Basic functionality when connection is lost
+- **Touch Gestures**: Swipe and pinch support for mobile users
+- **Visual Feedback**: Clear indication of system status
+
+## Optimistic UI Implementation
+
+### Cart Operations with Optimistic Updates
+
+To create a responsive and fluid shopping experience, we'll implement optimistic UI updates for cart operations:
+
+#### Add to Cart Flow
+
+1. User clicks "Add to Cart" button
+2. UI immediately updates cart icon counter and shows success toast
+3. Background API call adds item to cart on server
+4. If API call fails:
+   - Revert cart counter
+   - Show error notification
+   - Offer retry option
+
+#### Cart Item Quantity Updates
+
+1. User adjusts quantity via +/- buttons or input field
+2. UI immediately updates:
+   - Item quantity
+   - Item subtotal
+   - Cart subtotal, taxes, and total
+3. Background API call updates quantity on server
+4. If API call fails:
+   - Revert to previous quantity and calculations
+   - Show error notification
+   - Retry automatically or prompt user
+
+#### Remove Item From Cart
+
+1. User clicks remove button
+2. Item instantly fades out and removes from view
+3. Cart totals update immediately
+4. Background API call removes item on server
+5. If API call fails:
+   - Return item to cart
+   - Show error notification
+
+#### Apply Coupon Code
+
+1. User enters and submits coupon code
+2. UI shows "Checking..." with spinner
+3. On success:
+   - Instantly show discount applied
+   - Update all totals
+   - Show success message
+4. On failure:
+   - Show specific error (invalid, expired, etc.)
+
+#### Cart Context Implementation
+
+```tsx
+import { createContext, useContext, useReducer, useCallback } from "react";
+import { cartService } from "../services/cart.service";
+import { showNotification } from "../utils/notifications";
+
+// Define types
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+};
+
+type CartState = {
+  items: CartItem[];
+  totals: {
+    subtotal: number;
+    quantity: number;
+    tax?: number;
+    shipping?: number;
+    discount?: number;
+    total?: number;
+  };
+  isLoading: boolean;
+  originalState: null | {
+    items: CartItem[];
+    totals: CartState["totals"];
+  };
+};
+
+type CartAction =
+  | { type: "SET_CART"; payload: Partial<CartState> }
+  | { type: "ADD_ITEM"; payload: CartItem }
+  | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
+  | { type: "REMOVE_ITEM"; payload: { id: string } }
+  | { type: "CAPTURE_STATE" }
+  | { type: "RESTORE_STATE" }
+  | { type: "SET_LOADING"; payload: boolean };
+
+// Create reducer
+const cartReducer = (state: CartState, action: CartAction): CartState => {
+  switch (action.type) {
+    case "SET_CART":
+      return { ...state, ...action.payload };
+
+    case "ADD_ITEM": {
+      const existingItemIndex = state.items.findIndex(
+        (item) => item.id === action.payload.id
+      );
+
+      if (existingItemIndex >= 0) {
+        // Update existing item
+        const updatedItems = [...state.items];
+        const item = updatedItems[existingItemIndex];
+        updatedItems[existingItemIndex] = {
+          ...item,
+          quantity: item.quantity + action.payload.quantity,
+        };
+
+        return {
+          ...state,
+          items: updatedItems,
+          totals: {
+            ...state.totals,
+            subtotal:
+              state.totals.subtotal +
+              action.payload.price * action.payload.quantity,
+            quantity: state.totals.quantity + action.payload.quantity,
+          },
+        };
+      } else {
+        // Add new item
+        return {
+          ...state,
+          items: [...state.items, action.payload],
+          totals: {
+            ...state.totals,
+            subtotal:
+              state.totals.subtotal +
+              action.payload.price * action.payload.quantity,
+            quantity: state.totals.quantity + action.payload.quantity,
+          },
+        };
+      }
+    }
+
+    case "UPDATE_QUANTITY": {
+      const itemIndex = state.items.findIndex(
+        (item) => item.id === action.payload.id
+      );
+
+      if (itemIndex === -1) return state;
+
+      const item = state.items[itemIndex];
+      const quantityDiff = action.payload.quantity - item.quantity;
+
+      const updatedItems = [...state.items];
+      updatedItems[itemIndex] = {
+        ...item,
+        quantity: action.payload.quantity,
+      };
+
+      return {
+        ...state,
+        items: updatedItems,
+        totals: {
+          ...state.totals,
+          subtotal: state.totals.subtotal + item.price * quantityDiff,
+          quantity: state.totals.quantity + quantityDiff,
+        },
+      };
+    }
+
+    case "REMOVE_ITEM": {
+      const itemIndex = state.items.findIndex(
+        (item) => item.id === action.payload.id
+      );
+
+      if (itemIndex === -1) return state;
+
+      const item = state.items[itemIndex];
+
+      return {
+        ...state,
+        items: state.items.filter((i) => i.id !== action.payload.id),
+        totals: {
+          ...state.totals,
+          subtotal: state.totals.subtotal - item.price * item.quantity,
+          quantity: state.totals.quantity - item.quantity,
+        },
+      };
+    }
+
+    case "CAPTURE_STATE":
+      return {
+        ...state,
+        originalState: {
+          items: [...state.items],
+          totals: { ...state.totals },
+        },
+      };
+
+    case "RESTORE_STATE":
+      if (!state.originalState) return state;
+
+      return {
+        ...state,
+        items: state.originalState.items,
+        totals: state.originalState.totals,
+        originalState: null,
+      };
+
+    case "SET_LOADING":
+      return { ...state, isLoading: action.payload };
+
+    default:
+      return state;
+  }
+};
+
+// Initial state
+const initialState: CartState = {
+  items: [],
+  totals: {
+    subtotal: 0,
+    quantity: 0,
+  },
+  isLoading: false,
+  originalState: null,
+};
+
+// Create context
+const CartContext = createContext<
+  | {
+      state: CartState;
+      addToCart: (product: any, quantity: number) => Promise<void>;
+      updateQuantity: (id: string, quantity: number) => Promise<void>;
+      removeItem: (id: string) => Promise<void>;
+      clearCart: () => Promise<void>;
+    }
+  | undefined
+>(undefined);
+
+// Create provider
+function CartProvider({ children }) {
+  const [state, dispatch] = useReducer(cartReducer, initialState);
+
+  const addToCart = useCallback(async (product, quantity) => {
+    // Capture current state for potential rollback
+    dispatch({ type: "CAPTURE_STATE" });
+
+    // Optimistically update cart
+    const cartItem: CartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity,
+      image: product.images[0],
+    };
+
+    dispatch({ type: "ADD_ITEM", payload: cartItem });
+
+    try {
+      // Make API call in background
+      dispatch({ type: "SET_LOADING", payload: true });
+      await cartService.addItem(product.id, quantity);
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Show success notification
+      showNotification(`${product.name} added to cart`);
+    } catch (error) {
+      // Restore original state on error
+      dispatch({ type: "RESTORE_STATE" });
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Show error notification
+      showNotification(
+        "Failed to add item to cart. Please try again.",
+        "error"
+      );
+    }
+  }, []);
+
+  const updateQuantity = useCallback(async (id, quantity) => {
+    // Capture current state for potential rollback
+    dispatch({ type: "CAPTURE_STATE" });
+
+    // Optimistically update cart
+    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
+
+    try {
+      // Make API call in background
+      dispatch({ type: "SET_LOADING", payload: true });
+      await cartService.updateQuantity(id, quantity);
+      dispatch({ type: "SET_LOADING", payload: false });
+    } catch (error) {
+      // Restore original state on error
+      dispatch({ type: "RESTORE_STATE" });
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Show error notification
+      showNotification("Failed to update quantity. Please try again.", "error");
+    }
+  }, []);
+
+  const removeItem = useCallback(async (id) => {
+    // Capture current state for potential rollback
+    dispatch({ type: "CAPTURE_STATE" });
+
+    // Optimistically update cart
+    dispatch({ type: "REMOVE_ITEM", payload: { id } });
+
+    try {
+      // Make API call in background
+      dispatch({ type: "SET_LOADING", payload: true });
+      await cartService.removeItem(id);
+      dispatch({ type: "SET_LOADING", payload: false });
+    } catch (error) {
+      // Restore original state on error
+      dispatch({ type: "RESTORE_STATE" });
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Show error notification
+      showNotification("Failed to remove item. Please try again.", "error");
+    }
+  }, []);
+
+  const clearCart = useCallback(async () => {
+    // Capture current state for potential rollback
+    dispatch({ type: "CAPTURE_STATE" });
+
+    // Optimistically update cart
+    dispatch({
+      type: "SET_CART",
+      payload: {
+        items: [],
+        totals: { subtotal: 0, quantity: 0 },
+      },
+    });
+
+    try {
+      // Make API call in background
+      dispatch({ type: "SET_LOADING", payload: true });
+      await cartService.clearCart();
+      dispatch({ type: "SET_LOADING", payload: false });
+    } catch (error) {
+      // Restore original state on error
+      dispatch({ type: "RESTORE_STATE" });
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Show error notification
+      showNotification("Failed to clear cart. Please try again.", "error");
+    }
+  }, []);
+
+  return (
+    <CartContext.Provider
+      value={{
+        state,
+        addToCart,
+        updateQuantity,
+        removeItem,
+        clearCart,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+// Custom hook to use cart
+const useCart = () => {
+  const context = useContext(CartContext);
+  if (context === undefined) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
+};
+
+// Usage in components
+function AddToCartButton({ product }) {
+  const { addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
+
+  return (
+    <button
+      onClick={() => addToCart(product, quantity)}
+      className="btn btn-primary"
+    >
+      Add to Cart
+    </button>
+  );
+}
+```
+
+This implementation uses the useReducer pattern for state management, providing a more structured approach to handle cart operations. By combining this with optimistic UI updates, we create a responsive shopping experience that feels instantaneous to users while still ensuring data consistency with the server.

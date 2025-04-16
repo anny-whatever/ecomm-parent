@@ -10,12 +10,12 @@ This document outlines the comprehensive frontend implementation plan for the e-
 ## Technology Stack
 
 - **Framework**: Next.js (React) for both customer and admin interfaces
-- **State Management**: React Context API + Redux Toolkit for complex state
+- **State Management**: React Context API + useReducer for client state
+- **Server State**: React Query for data fetching and cache management
 - **Styling**: Tailwind CSS with custom theme configurations
 - **Forms**: React Hook Form with Zod for validation
 - **API Communication**: Axios with custom interceptors
 - **Authentication**: JWT stored in HTTP-only cookies
-- **Real-time Features**: Server-Sent Events (SSE)
 - **Data Visualization**: Recharts for analytics dashboards
 
 ## Core Features & Components
@@ -268,6 +268,71 @@ The frontend will integrate with all API endpoints available in the server imple
 16. `/api/v1/loyalty/*` - Loyalty program
 17. `/api/v1/subscriptions/*` - Subscription services
 18. `/api/v1/admin/*` - Admin-specific endpoints
+
+## Optimistic UI Strategy
+
+To create a responsive and fluid user experience, we'll implement optimistic UI updates for key user interactions:
+
+### Key Features Using Optimistic Updates
+
+1. **Shopping Cart Operations**
+
+   - Adding items to cart
+   - Updating quantities
+   - Removing items
+   - Applying coupon codes
+
+2. **Wishlist Management**
+
+   - Adding/removing products
+   - Moving items to cart
+
+3. **User Preferences & Settings**
+
+   - Updating account details
+   - Managing addresses
+   - Changing notification preferences
+
+4. **Product Interactions**
+   - Submitting reviews and ratings
+   - Saving product for later
+
+### Implementation Approach
+
+1. **State Snapshots**: Save the current state before optimistic updates
+2. **Immediate UI Changes**: Update UI immediately without waiting for API response
+3. **Background API Calls**: Process actual API requests in the background
+4. **Error Handling**: Provide graceful rollbacks if server operations fail
+5. **Conflict Resolution**: Implement logic to handle server-client state differences
+
+### Technical Pattern
+
+```tsx
+// Example: Adding to cart with optimistic updates
+const addToCart = async (product, quantity) => {
+  // 1. Store original cart for potential rollback
+  const originalCart = [...cart];
+
+  // 2. Update UI optimistically
+  setCart((prevCart) => [...prevCart, { ...product, quantity }]);
+
+  try {
+    // 3. Make the actual API call
+    await cartService.addItem(product.id, quantity);
+
+    // 4. Show success notification
+    showNotification(`${product.name} added to cart`);
+  } catch (error) {
+    // 5. On failure, restore original state
+    setCart(originalCart);
+
+    // 6. Show error notification
+    showNotification("Failed to add item to cart. Please try again.");
+  }
+};
+```
+
+This approach will create a seamless, app-like experience for users without requiring complex real-time infrastructure.
 
 ## Implementation Phases
 

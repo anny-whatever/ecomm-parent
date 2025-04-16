@@ -25,8 +25,8 @@ The frontend implementation follows a modern, component-based architecture with 
 │         API Communication Layer      │
 │                                     │
 │  ┌───────────────┐ ┌───────────────┐│
-│  │ REST Services │ │  Real-time    ││
-│  │               │ │  Services     ││
+│  │ REST Services │ │  Optimistic   ││
+│  │               │ │  UI Updates   ││
 │  └───────────────┘ └───────────────┘│
 └───────────────┬─────────────────────┘
                 │
@@ -53,8 +53,7 @@ The frontend implementation follows a modern, component-based architecture with 
 
 3. **State Management**
 
-   - Context API for global state
-   - Redux Toolkit for complex state (selective use)
+   - Context API with useReducer for global state
    - React Query for server state management
    - Local component state for UI-specific state
 
@@ -68,21 +67,21 @@ The frontend implementation follows a modern, component-based architecture with 
 
 ### Core Technologies
 
-| Category         | Technology                    | Purpose                                            |
-| ---------------- | ----------------------------- | -------------------------------------------------- |
-| Framework        | Next.js 14+                   | React framework with hybrid rendering capabilities |
-| UI Library       | React 18+                     | Component-based UI development                     |
-| Language         | TypeScript 5+                 | Type-safe JavaScript development                   |
-| Styling          | Tailwind CSS                  | Utility-first CSS framework                        |
-| State Management | React Context + Redux Toolkit | Global state management                            |
-| Data Fetching    | React Query / SWR             | Server state management and caching                |
-| Forms            | React Hook Form + Zod         | Form handling with validation                      |
-| Routing          | Next.js Router                | Page routing and navigation                        |
-| Animation        | Framer Motion                 | UI animations and transitions                      |
-| Testing          | Jest + React Testing Library  | Unit and integration testing                       |
-| E2E Testing      | Playwright                    | End-to-end testing                                 |
-| API Client       | Axios                         | HTTP client for API requests                       |
-| Build Tool       | Turbopack (Next.js)           | Fast builds and development experience             |
+| Category         | Technology                   | Purpose                                            |
+| ---------------- | ---------------------------- | -------------------------------------------------- |
+| Framework        | Next.js 14+                  | React framework with hybrid rendering capabilities |
+| UI Library       | React 18+                    | Component-based UI development                     |
+| Language         | TypeScript 5+                | Type-safe JavaScript development                   |
+| Styling          | Tailwind CSS                 | Utility-first CSS framework                        |
+| State Management | React Context + useReducer   | Global state management                            |
+| Data Fetching    | React Query                  | Server state management and caching                |
+| Forms            | React Hook Form + Zod        | Form handling with validation                      |
+| Routing          | Next.js Router               | Page routing and navigation                        |
+| Animation        | Framer Motion                | UI animations and transitions                      |
+| Testing          | Jest + React Testing Library | Unit and integration testing                       |
+| E2E Testing      | Playwright                   | End-to-end testing                                 |
+| API Client       | Axios                        | HTTP client for API requests                       |
+| Build Tool       | Turbopack (Next.js)          | Fast builds and development experience             |
 
 ### Supporting Libraries
 
@@ -256,32 +255,230 @@ export function useProducts(params: ProductQueryParams) {
 }
 ```
 
+3. **Optimistic UI Strategy**
+   - Immediate UI updates before server confirmation
+   - Temporary state management for optimistic changes
+   - Automatic rollback on server errors
+   - Seamless background synchronization
+   - Conflict resolution for concurrent updates
+
+```typescript
+// Example optimistic update pattern
+function useOptimisticCartUpdate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, quantity }) =>
+      cartService.updateItem(productId, quantity),
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["cart"] });
+
+      // Snapshot previous cart value
+      const previousCart = queryClient.getQueryData(["cart"]);
+
+      // Optimistically update cart
+      queryClient.setQueryData(["cart"], (old) => ({
+        ...old,
+        items: old.items.map((item) =>
+          item.id === variables.productId
+            ? { ...item, quantity: variables.quantity }
+            : item
+        ),
+      }));
+
+      return { previousCart };
+    },
+    onError: (err, variables, context) => {
+      // On error, roll back to previous cart value
+      queryClient.setQueryData(["cart"], context.previousCart);
+      showNotification("Failed to update cart. Please try again.");
+    },
+    onSettled: () => {
+      // Always refetch cart after mutation to ensure server consistency
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+  });
+}
+```
+
 ### State Management
 
-1. **Global State**
+1. **Client State with Context + useReducer**
 
-   - Authentication state
-   - Cart state
-   - User preferences
-   - UI theme and settings
+   ```typescript
+   // Example Context with useReducer pattern
+   import { createContext, useReducer, useContext } from "react";
 
-2. **Local State**
+   // Define state and actions
+   type CartItem = {
+     id: string;
+     name: string;
+     price: number;
+     quantity: number;
+   };
 
-   - Component UI state
-   - Form state
-   - Interaction state
+   type CartState = {
+     items: CartItem[];
+     itemCount: number;
+     total: number;
+   };
 
-3. **Server State**
+   type CartAction =
+     | { type: "ADD_ITEM"; payload: CartItem }
+     | { type: "REMOVE_ITEM"; payload: { id: string } }
+     | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
+     | { type: "CLEAR_CART" };
 
-   - Product data
-   - User data
-   - Order data
-   - Content data
+   // Create the reducer
+   const cartReducer = (state: CartState, action: CartAction): CartState => {
+     switch (action.type) {
+       case "ADD_ITEM": {
+         const existingItem = state.items.find(
+           (item) => item.id === action.payload.id
+         );
 
-4. **URL State**
-   - Route parameters
-   - Query parameters for filters and pagination
-   - Search terms
+         if (existingItem) {
+           // Update existing item
+           return {
+             ...state,
+             items: state.items.map((item) =>
+               item.id === action.payload.id
+                 ? {
+                     ...item,
+                     quantity: item.quantity + action.payload.quantity,
+                   }
+                 : item
+             ),
+             itemCount: state.itemCount + action.payload.quantity,
+             total:
+               state.total + action.payload.price * action.payload.quantity,
+           };
+         } else {
+           // Add new item
+           return {
+             ...state,
+             items: [...state.items, action.payload],
+             itemCount: state.itemCount + action.payload.quantity,
+             total:
+               state.total + action.payload.price * action.payload.quantity,
+           };
+         }
+       }
+
+       case "REMOVE_ITEM": {
+         const itemToRemove = state.items.find(
+           (item) => item.id === action.payload.id
+         );
+         if (!itemToRemove) return state;
+
+         return {
+           ...state,
+           items: state.items.filter((item) => item.id !== action.payload.id),
+           itemCount: state.itemCount - itemToRemove.quantity,
+           total: state.total - itemToRemove.price * itemToRemove.quantity,
+         };
+       }
+
+       case "UPDATE_QUANTITY": {
+         const itemToUpdate = state.items.find(
+           (item) => item.id === action.payload.id
+         );
+         if (!itemToUpdate) return state;
+
+         const quantityDiff = action.payload.quantity - itemToUpdate.quantity;
+
+         return {
+           ...state,
+           items: state.items.map((item) =>
+             item.id === action.payload.id
+               ? { ...item, quantity: action.payload.quantity }
+               : item
+           ),
+           itemCount: state.itemCount + quantityDiff,
+           total: state.total + itemToUpdate.price * quantityDiff,
+         };
+       }
+
+       case "CLEAR_CART":
+         return {
+           items: [],
+           itemCount: 0,
+           total: 0,
+         };
+
+       default:
+         return state;
+     }
+   };
+
+   // Initial state
+   const initialCartState: CartState = {
+     items: [],
+     itemCount: 0,
+     total: 0,
+   };
+
+   // Create the context
+   const CartContext = createContext<
+     | {
+         state: CartState;
+         dispatch: React.Dispatch<CartAction>;
+       }
+     | undefined
+   >(undefined);
+
+   // Create provider component
+   export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
+     children,
+   }) => {
+     const [state, dispatch] = useReducer(cartReducer, initialCartState);
+
+     return (
+       <CartContext.Provider value={{ state, dispatch }}>
+         {children}
+       </CartContext.Provider>
+     );
+   };
+
+   // Create custom hook for using the cart
+   export const useCart = () => {
+     const context = useContext(CartContext);
+     if (context === undefined) {
+       throw new Error("useCart must be used within a CartProvider");
+     }
+     return context;
+   };
+   ```
+
+2. **Server State with React Query**
+
+   ```typescript
+   // Product listing with React Query
+   const useProducts = (filters) => {
+     return useQuery({
+       queryKey: ["products", filters],
+       queryFn: () => productService.getProducts(filters),
+       staleTime: 5 * 60 * 1000, // 5 minutes
+     });
+   };
+
+   // Using the query in a component
+   const ProductList = ({ category }) => {
+     const { data, isLoading, error } = useProducts({ category });
+
+     if (isLoading) return <ProductSkeleton count={8} />;
+     if (error) return <ErrorMessage message="Failed to load products" />;
+
+     return (
+       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+         {data.products.map((product) => (
+           <ProductCard key={product.id} product={product} />
+         ))}
+       </div>
+     );
+   };
+   ```
 
 ## Authentication & Security
 
